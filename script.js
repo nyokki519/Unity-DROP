@@ -49,7 +49,7 @@ const DROP_ITEMS = [
     title: "次回イベント 200円OFF",
 
     message:
-      "次回のUnityイベントで使える特典です。受付でスタッフにお伝えください。",
+      "次回のUnityイベントで使える特典です。スタッフにお伝えください。",
 
     count: 7
   },
@@ -60,7 +60,7 @@ const DROP_ITEMS = [
     title: "RARE DROP",
 
     message:
-      "少し特別な特典です。次回イベントでスタッフにお声がけください。",
+      "少し特別な特典です。内容はスタッフにお声がけください。",
 
     count: 2
   },
@@ -71,7 +71,7 @@ const DROP_ITEMS = [
     title: "SECRET RARE DROP",
 
     message:
-      "今回は特別なDROPです。次回イベントでスタッフにお声がけください。",
+      "おめでとうございます。特別なDROPです。内容はスタッフにお声がけください。",
 
     count: 1
   }
