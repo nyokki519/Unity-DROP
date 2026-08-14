@@ -40,7 +40,7 @@ const DROP_ITEMS = [
     message:
       "次回のUnityイベントで使える特典です。スタッフにお伝えください。",
 
-    count: 80
+    count: 75
   },
 
   {
@@ -62,7 +62,7 @@ const DROP_ITEMS = [
     message:
       "おめでとうございます。特別なDROPです。内容はスタッフにお声がけください。",
 
-    count: 5
+    count: 10
   }
 
 ];
