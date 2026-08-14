@@ -1,171 +1,162 @@
 /* ==========================================================================
-   UNITY DROP（完全版）
-   ==========================================================================
-   ・イベントキーは日本時間の日付から自動生成
-   ・同じ端末 / 同じブラウザでは1日1回
-   ・日付が変われば自動的にもう一度引ける
-   ・GitHub Pagesだけで動作
-   ・DROPの確率は count の重みで設定
+   UNITY DROP
+   Premium Opening Animation
    ========================================================================== */
 
 
 /* ==========================================================================
-   【管理者用】DROP設定
+   管理者設定
    ========================================================================== */
 
 const DROP_CONFIG = {
 
-  // 管理者用メモ
-  // 実際の抽選人数を制限するものではありません
   totalDrops: 10,
 
-
   /*
-   * ============================================================
-   * イベントキー
-   * ============================================================
+   * 日本時間の日付から自動生成
    *
-   * 日本時間（Asia/Tokyo）の日付から自動生成します。
+   * 例：
    *
-   * 2026年8月14日
+   * 2026-08-14
    * ↓
    * unity-drop-2026-08-14
    *
-   * 2026年8月15日
-   * ↓
-   * unity-drop-2026-08-15
-   *
-   * そのため、管理者が毎回 eventKey を変更する必要はありません。
+   * 日付が変われば自動的に別のDROPとして扱われます。
    */
 
-  eventKey: "unity-drop-" + new Intl.DateTimeFormat("ja-JP", {
-    timeZone: "Asia/Tokyo",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
-  })
-    .format(new Date())
-    .replace(/\//g, "-")
+  eventKey:
+    "unity-drop-" +
+    new Intl.DateTimeFormat("ja-JP", {
+      timeZone: "Asia/Tokyo",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    })
+      .format(new Date())
+      .replace(/\//g, "-")
 
 };
 
 
 /* ==========================================================================
-   【管理者用】DROP内容
+   DROP内容
    ==========================================================================
 
-   count = 抽選時の重み
+   現在：
 
-   例：
-
-   200円OFF → 7
-   RARE      → 2
-   SECRET    → 1
-
-   合計10
-
-   ↓
-
-   200円OFF = 70%
-   RARE      = 20%
-   SECRET    = 10%
-
-   ※ GitHub Pagesだけの仕組みなので、
-      全参加者共通の「残り在庫」を管理するものではありません。
+   200円OFF     70%
+   RARE         20%
+   SECRET RARE  10%
 
    ========================================================================== */
 
 const DROP_ITEMS = [
 
   {
-    title: "次回イベント 200円OFF",
+
+    title:
+      "次回イベント 200円OFF",
 
     message:
       "次回のUnityイベントで使える特典です。イベントでスタッフにお声がけください。",
 
     count: 7
+
   },
 
 
   {
-    title: "RARE DROP",
+
+    title:
+      "RARE DROP",
 
     message:
       "レアドロップ！内容はイベントでスタッフに声をかけてください。",
 
     count: 2
+
   },
 
 
   {
-    title: "SECRET RARE DROP",
+
+    title:
+      "SECRET RARE DROP",
 
     message:
       "シークレットレアドロップです。内容はイベントでスタッフにお声がけください。",
 
     count: 1
+
   }
 
 ];
 
 
 /* ==========================================================================
-   ここから下は通常変更不要
+   Main
    ========================================================================== */
 
 (function () {
 
 
   /* ------------------------------------------------------------------------
-     localStorage用キー
-
-     日付ごとに自動的に変わります。
-
-     例：
-
-     unityDropOpened_unity-drop-2026-08-14
-
-     unityDropOpened_unity-drop-2026-08-15
-
+     Storage
      ------------------------------------------------------------------------ */
 
   const STORAGE_KEY_OPENED =
-    "unityDropOpened_" + DROP_CONFIG.eventKey;
+    "unityDropOpened_" +
+    DROP_CONFIG.eventKey;
+
 
   const STORAGE_KEY_RESULT =
-    "unityDropResult_" + DROP_CONFIG.eventKey;
+    "unityDropResult_" +
+    DROP_CONFIG.eventKey;
 
 
   /* ------------------------------------------------------------------------
-     ID取得
+     Helper
      ------------------------------------------------------------------------ */
 
   function $(id) {
+
     return document.getElementById(id);
+
   }
 
 
   /* ------------------------------------------------------------------------
-     画面切り替え
+     Screen
      ------------------------------------------------------------------------ */
 
   function showScreen(id) {
 
-    const ids = [
+
+    const screens = [
+
       "screen-intro",
+
       "screen-opening",
+
       "screen-result",
+
       "screen-already",
+
       "screen-fallback"
+
     ];
 
 
-    ids.forEach(function (screenId) {
+    screens.forEach(function (screenId) {
 
       const el = $(screenId);
 
       if (el) {
-        el.classList.remove("is-active");
+
+        el.classList.remove(
+          "is-active"
+        );
+
       }
 
     });
@@ -173,64 +164,48 @@ const DROP_ITEMS = [
 
     const target = $(id);
 
+
     if (target) {
-      target.classList.add("is-active");
+
+      target.classList.add(
+        "is-active"
+      );
+
     }
 
   }
 
 
   /* ------------------------------------------------------------------------
-     エラー画面
+     Fallback
      ------------------------------------------------------------------------ */
 
   function showFallback(message) {
 
-    const el = $("fallback-message");
 
-    if (el && message) {
-      el.textContent = message;
+    const el =
+      $("fallback-message");
+
+
+    if (el) {
+
+      el.textContent =
+        message ||
+        "予期しないエラーが発生しました。";
+
     }
 
-    showScreen("screen-fallback");
 
-  }
-
-
-  /* ------------------------------------------------------------------------
-     テキスト安全処理
-     ------------------------------------------------------------------------ */
-
-  function escapeText(str) {
-
-    return String(
-      str == null ? "" : str
+    showScreen(
+      "screen-fallback"
     );
 
   }
 
 
-  /* ------------------------------------------------------------------------
-     ランダム抽選
-     ------------------------------------------------------------------------
-
-     countの重みに応じて抽選します。
-
-     例：
-
-     200円OFF  → count 7
-     RARE      → count 2
-     SECRET    → count 1
-
-     ↓
-
-     7 + 2 + 1 = 10
-
-     200円OFF → 70%
-     RARE     → 20%
-     SECRET   → 10%
-
-     ------------------------------------------------------------------------ */
+  /* ==========================================================================
+     抽選
+     ========================================================================== */
 
   function pickRandomItem() {
 
@@ -272,37 +247,55 @@ const DROP_ITEMS = [
 
 
     if (pool.length === 0) {
+
       return null;
+
     }
 
 
-    const index =
+    return pool[
       Math.floor(
-        Math.random() * pool.length
-      );
-
-
-    return pool[index];
+        Math.random() *
+        pool.length
+      )
+    ];
 
   }
 
 
-  /* ------------------------------------------------------------------------
-     キラキラ演出
-     ------------------------------------------------------------------------ */
+  /* ==========================================================================
+     パーティクル生成
+     ========================================================================== */
 
-  function fireSparkles() {
+  function createParticles(type) {
 
 
-    const field = $("sparkle-field");
+    const field =
+      $("particle-field");
 
 
     if (!field) {
+
       return;
+
     }
 
 
-    const count = 22;
+    let count = 55;
+
+
+    if (type === "rare") {
+
+      count = 80;
+
+    }
+
+
+    if (type === "secret") {
+
+      count = 130;
+
+    }
 
 
     for (
@@ -312,11 +305,14 @@ const DROP_ITEMS = [
     ) {
 
 
-      const sparkle =
-        document.createElement("span");
+      const particle =
+        document.createElement(
+          "span"
+        );
 
 
-      sparkle.className = "sparkle";
+      particle.className =
+        "particle";
 
 
       const angle =
@@ -325,94 +321,441 @@ const DROP_ITEMS = [
         2;
 
 
-      const distance =
-        80 +
+      let distance =
+        100 +
         Math.random() *
-        140;
+        320;
 
 
-      sparkle.style.setProperty(
-        "--sx",
-        `${Math.cos(angle) * distance}px`
+      if (type === "secret") {
+
+        distance =
+          140 +
+          Math.random() *
+          430;
+
+      }
+
+
+      const x =
+        Math.cos(angle) *
+        distance;
+
+
+      const y =
+        Math.sin(angle) *
+        distance;
+
+
+      const size =
+        2 +
+        Math.random() *
+        5;
+
+
+      const duration =
+        700 +
+        Math.random() *
+        900;
+
+
+      let particleColor =
+        "#c9a85c";
+
+
+      if (
+        Math.random() > .65
+      ) {
+
+        particleColor =
+          "#ead49a";
+
+      }
+
+
+      if (type === "secret") {
+
+        particleColor =
+          Math.random() > .5
+            ? "#ead49a"
+            : "#ffffff";
+
+      }
+
+
+      particle.style.setProperty(
+        "--x",
+        `${x}px`
       );
 
 
-      sparkle.style.setProperty(
-        "--sy",
-        `${Math.sin(angle) * distance}px`
+      particle.style.setProperty(
+        "--y",
+        `${y}px`
       );
 
 
-      sparkle.style.left = "50%";
-      sparkle.style.top = "50%";
+      particle.style.setProperty(
+        "--size",
+        `${size}px`
+      );
 
 
-      field.appendChild(sparkle);
+      particle.style.setProperty(
+        "--duration",
+        `${duration}ms`
+      );
 
 
-      const delay =
-        Math.random() * 400;
+      particle.style.setProperty(
+        "--particle-color",
+        particleColor
+      );
 
 
-      setTimeout(function () {
+      field.appendChild(
+        particle
+      );
 
-        sparkle.classList.add(
-          "is-firing"
-        );
 
-      }, delay);
+      requestAnimationFrame(
+        function () {
+
+          particle.classList.add(
+            "fire"
+          );
+
+        }
+      );
+
+
+      setTimeout(
+        function () {
+
+          particle.remove();
+
+        },
+        duration + 100
+      );
 
     }
 
   }
 
 
-  /* ------------------------------------------------------------------------
-     抽選結果を画面に表示
-     ------------------------------------------------------------------------ */
+  /* ==========================================================================
+     Flash
+     ========================================================================== */
 
-  function renderResultInto(prefixId, item) {
+  function fireFlash() {
+
+
+    const flash =
+      $("flash");
+
+
+    if (!flash) {
+
+      return;
+
+    }
+
+
+    flash.classList.remove(
+      "active"
+    );
+
+
+    void flash.offsetWidth;
+
+
+    flash.classList.add(
+      "active"
+    );
+
+  }
+
+
+  /* ==========================================================================
+     Shockwave
+     ========================================================================== */
+
+  function fireShockwave() {
+
+
+    const shockwave =
+      $("shockwave");
+
+
+    if (!shockwave) {
+
+      return;
+
+    }
+
+
+    shockwave.classList.remove(
+      "active"
+    );
+
+
+    void shockwave.offsetWidth;
+
+
+    shockwave.classList.add(
+      "active"
+    );
+
+  }
+
+
+  /* ==========================================================================
+     Result Rarity
+     ========================================================================== */
+
+  function getRarity(item) {
 
 
     if (!item) {
-      return;
-    }
 
-
-    const titleEl =
-      $(prefixId + "-title");
-
-
-    const messageEl =
-      $(prefixId + "-message");
-
-
-    if (titleEl) {
-
-      titleEl.textContent =
-        escapeText(item.title);
+      return "drop";
 
     }
 
 
-    if (messageEl) {
+    const title =
+      String(item.title)
+        .toUpperCase();
 
-      messageEl.textContent =
-        escapeText(item.message);
+
+    if (
+      title.includes(
+        "SECRET"
+      )
+    ) {
+
+      return "secret";
+
+    }
+
+
+    if (
+      title.includes(
+        "RARE"
+      )
+    ) {
+
+      return "rare";
+
+    }
+
+
+    return "drop";
+
+  }
+
+
+  /* ==========================================================================
+     Result表示
+     ========================================================================== */
+
+  function renderResult(item) {
+
+
+    const title =
+      $("result-title");
+
+
+    const message =
+      $("result-message");
+
+
+    const rarity =
+      $("result-rarity");
+
+
+    if (title) {
+
+      title.textContent =
+        item.title;
+
+    }
+
+
+    if (message) {
+
+      message.textContent =
+        item.message;
+
+    }
+
+
+    const type =
+      getRarity(item);
+
+
+    document.body.classList.remove(
+      "rare-mode",
+      "secret-mode"
+    );
+
+
+    if (rarity) {
+
+
+      if (type === "secret") {
+
+        rarity.textContent =
+          "SECRET RARE";
+
+
+      } else if (type === "rare") {
+
+        rarity.textContent =
+          "RARE";
+
+
+      } else {
+
+        rarity.textContent =
+          "DROP";
+
+      }
+
+    }
+
+
+    if (type === "rare") {
+
+      document.body.classList.add(
+        "rare-mode"
+      );
+
+    }
+
+
+    if (type === "secret") {
+
+      document.body.classList.add(
+        "secret-mode"
+      );
 
     }
 
   }
 
 
-  /* ------------------------------------------------------------------------
-     DROPを開く
-     ------------------------------------------------------------------------ */
+  /* ==========================================================================
+     開封演出
+     ========================================================================== */
+
+  function playOpeningAnimation(item) {
+
+
+    const type =
+      getRarity(item);
+
+
+    /*
+     * 最初のパーティクル
+     */
+
+    createParticles(
+      type
+    );
+
+
+    /*
+     * 少し溜める
+     */
+
+    setTimeout(
+      function () {
+
+        fireShockwave();
+
+      },
+      900
+    );
+
+
+    /*
+     * 光を爆発
+     */
+
+    setTimeout(
+      function () {
+
+        fireFlash();
+
+        createParticles(
+          type
+        );
+
+      },
+      1450
+    );
+
+
+    /*
+     * SECRETだけさらに追加演出
+     */
+
+    if (type === "secret") {
+
+
+      setTimeout(
+        function () {
+
+          fireFlash();
+
+          fireShockwave();
+
+          createParticles(
+            "secret"
+          );
+
+        },
+        1750
+      );
+
+    }
+
+
+    /*
+     * 結果表示
+     */
+
+    const resultDelay =
+      type === "secret"
+        ? 2300
+        : 2000;
+
+
+    setTimeout(
+      function () {
+
+        renderResult(
+          item
+        );
+
+        showScreen(
+          "screen-result"
+        );
+
+      },
+      resultDelay
+    );
+
+  }
+
+
+  /* ==========================================================================
+     DROP開封
+     ========================================================================== */
 
   function openDrop() {
 
-
-    /* DROP未設定チェック */
 
     if (
       !Array.isArray(DROP_ITEMS) ||
@@ -420,15 +763,13 @@ const DROP_ITEMS = [
     ) {
 
       showFallback(
-        "現在DROPの内容が準備されていません。運営にお問い合わせください。"
+        "現在DROPの内容が準備されていません。"
       );
 
       return;
 
     }
 
-
-    /* 抽選 */
 
     const item =
       pickRandomItem();
@@ -437,7 +778,7 @@ const DROP_ITEMS = [
     if (!item) {
 
       showFallback(
-        "DROPの抽選に失敗しました。ページを再読み込みしてお試しください。"
+        "DROPの抽選に失敗しました。"
       );
 
       return;
@@ -445,90 +786,62 @@ const DROP_ITEMS = [
     }
 
 
-    /* 開封演出 */
+    /*
+     * 結果は演出開始前に決定
+     */
+
+    try {
+
+
+      localStorage.setItem(
+        STORAGE_KEY_OPENED,
+        "1"
+      );
+
+
+      localStorage.setItem(
+        STORAGE_KEY_RESULT,
+        JSON.stringify(item)
+      );
+
+
+    } catch (error) {
+
+
+      console.warn(
+        "localStorage保存失敗:",
+        error
+      );
+
+    }
+
+
+    /*
+     * 開封画面
+     */
 
     showScreen(
       "screen-opening"
     );
 
 
-    fireSparkles();
+    /*
+     * 開封演出開始
+     */
 
-
-    /* 約2秒後に結果表示 */
-
-    window.setTimeout(function () {
-
-
-      try {
-
-
-        /*
-         * この端末では本日すでに引いた
-         * という情報を保存
-         */
-
-        localStorage.setItem(
-          STORAGE_KEY_OPENED,
-          "1"
-        );
-
-
-        /*
-         * 抽選結果も保存
-         *
-         * もう一度アクセスした場合でも
-         * 同じ結果を表示できる
-         */
-
-        localStorage.setItem(
-          STORAGE_KEY_RESULT,
-          JSON.stringify(item)
-        );
-
-
-      } catch (err) {
-
-
-        /*
-         * localStorageが使えなくても
-         * 今回の抽選結果は表示する
-         */
-
-        console.warn(
-          "UNITY DROP: localStorageへの保存に失敗しました。",
-          err
-        );
-
-      }
-
-
-      /* 結果表示 */
-
-      renderResultInto(
-        "result",
-        item
-      );
-
-
-      showScreen(
-        "screen-result"
-      );
-
-
-    }, 2000);
+    playOpeningAnimation(
+      item
+    );
 
   }
 
 
-  /* ------------------------------------------------------------------------
+  /* ==========================================================================
      初期化
-     ------------------------------------------------------------------------ */
+     ========================================================================== */
 
   function init() {
 
-
-    /* 開封ボタン */
 
     const btnOpen =
       $("btn-open");
@@ -546,8 +859,21 @@ const DROP_ITEMS = [
            * 連打防止
            */
 
-          btnOpen.disabled = true;
+          btnOpen.disabled =
+            true;
 
+
+          /*
+           * ボタンを少し縮ませる
+           */
+
+          btnOpen.style.transform =
+            "scale(.94)";
+
+
+          /*
+           * 抽選開始
+           */
 
           openDrop();
 
@@ -561,9 +887,12 @@ const DROP_ITEMS = [
        今日すでに引いたか確認
        ---------------------------------------------------------------------- */
 
-    let alreadyOpened = false;
+    let alreadyOpened =
+      false;
 
-    let previousResult = null;
+
+    let previousResult =
+      null;
 
 
     try {
@@ -587,32 +916,35 @@ const DROP_ITEMS = [
         try {
 
           previousResult =
-            JSON.parse(stored);
+            JSON.parse(
+              stored
+            );
 
-        } catch (parseError) {
+        } catch (error) {
 
-          previousResult = null;
+          previousResult =
+            null;
 
         }
 
       }
 
 
-    } catch (err) {
+    } catch (error) {
 
 
       /*
-       * localStorageが使えない環境では
-       * 毎回引ける状態にフォールバック
+       * localStorageが使えない場合
        */
 
-      alreadyOpened = false;
+      alreadyOpened =
+        false;
 
     }
 
 
     /* ----------------------------------------------------------------------
-       すでに今日引いている場合
+       すでに開封済み
        ---------------------------------------------------------------------- */
 
     if (alreadyOpened) {
@@ -624,24 +956,29 @@ const DROP_ITEMS = [
       ) {
 
 
-        renderResultInto(
-          "already",
-          previousResult
-        );
+        const title =
+          $("already-title");
 
 
-      } else {
+        const message =
+          $("already-message");
 
 
-        renderResultInto(
-          "already",
-          {
-            title: "DROP済み",
+        if (title) {
 
-            message:
-              "このDROPはすでに開いています。"
-          }
-        );
+          title.textContent =
+            previousResult.title;
+
+        }
+
+
+        if (message) {
+
+          message.textContent =
+            previousResult.message;
+
+        }
+
 
       }
 
@@ -657,7 +994,7 @@ const DROP_ITEMS = [
 
 
     /* ----------------------------------------------------------------------
-       初回アクセス
+       初回
        ---------------------------------------------------------------------- */
 
     showScreen(
@@ -668,25 +1005,31 @@ const DROP_ITEMS = [
 
 
   /* ==========================================================================
-     想定外エラー対策
+     Error
      ========================================================================== */
 
   window.addEventListener(
     "error",
-    function () {
+    function (error) {
 
 
-      showFallback(
-        "予期しないエラーが発生しました。ページを再読み込みしてお試しください。"
+      console.error(
+        "UNITY DROP error:",
+        error
       );
 
+
+      /*
+       * アニメーション中のエラーで
+       * 画面を突然Fallbackにしないようにする
+       */
 
     }
   );
 
 
   /* ==========================================================================
-     DOM読み込み完了
+     DOM Ready
      ========================================================================== */
 
   document.addEventListener(
@@ -696,16 +1039,13 @@ const DROP_ITEMS = [
 
       try {
 
-
         init();
 
-
-      } catch (err) {
-
+      } catch (error) {
 
         console.error(
           "UNITY DROP init error:",
-          err
+          error
         );
 
 
