@@ -1,204 +1,722 @@
 /* ==========================================================================
-   UNITY DROP（シンプル版）— script.js
+   UNITY DROP（完全版）
    ==========================================================================
-   ★★★ 管理者が毎回変更するのはこの2か所だけです ★★★
+   ・イベントキーは日本時間の日付から自動生成
+   ・同じ端末 / 同じブラウザでは1日1回
+   ・日付が変われば自動的にもう一度引ける
+   ・GitHub Pagesだけで動作
+   ・DROPの確率は count の重みで設定
    ========================================================================== */
 
-// ==================================================
-// 【管理者用】今回のイベントのDROP口数を設定
-// 参加人数に合わせて数字だけ変更してください
-// （この数字はページ上部の案内などには使われません。
-//   「今回は何口用意したか」を管理者が把握しておくための
-//   メモとして使ってください。GitHub Pagesだけで動く仕組みのため、
-//   実際に何人が引いたかをこの画面だけで自動集計することはできません）
-// ==================================================
-const DROP_CONFIG = {
-  totalDrops: 10,
-
-  // 【重要】イベントごとに、この文字列を必ず変更してください
-  // 「同じ端末では1回しか引けない」状態は、この文字列単位で管理されます。
-  // 前回と同じ文字列のままだと、以前に一度DROPを引いた人は
-  // （同じ端末・ブラウザの場合）今回は引けません。
-  // 逆に、新しいイベントのたびにここを変える（例：日付やイベント名を入れる）だけで、
-  // 全員が「まだ引いていない」状態からスタートできます。
-  // 例）"2026-08-16-futsal"、"2026-08-23-cafe" など、他の回と重複しなければ何でもOK
-  eventKey: "unity-drop-2026-08-14-cafe"
-};
-
-// ==================================================
-// 【管理者用】DROPの内容一覧
-// 好きなだけ増減できます。参加者にはこの中からランダムで1つ表示されます
-//
-// count（出現の重み）について：
-// ここでの count は「正確な残り個数」を管理するものではありません
-// （GAS・サーバーを使わない構成のため、参加者全員を横断して
-//  「もう何個出たか」を数える仕組みがありません）。
-// あくまで「出やすさ・出にくさ」の目安（重み）です。
-// 例）SPECIAL DROP を 1、それ以外を 5 にすると、
-//     SPECIAL DROPは統計的に約6分の1の確率で表示されます
-//     （8人引けば大体1人くらい、という目安で、保証ではありません）
-// 省略した場合は count: 1 として扱われます
-// ==================================================
-const DROP_ITEMS = [
-  {
-    title: "次回イベント 200円OFF",
-    message: "次回のUnityイベントで使える特典です。イベントでスタッフにお声がけください。",
-    count: 7
-  },
-  {
-    title: "RARE DROP",
-    message: "レアドロップ！内容はイベントでスタッフに声をかけてください。",
-    count: 2
-  },
-  {
-    title: "SECRET RARE DROP",
-    message: "シークレットレアドロップです。内容はイベントでスタッフにお声がけください。",
-    count: 1
-  }
-];
 
 /* ==========================================================================
-   ここから下はロジックです（通常は変更不要）
+   【管理者用】DROP設定
+   ========================================================================== */
+
+const DROP_CONFIG = {
+
+  // 管理者用メモ
+  // 実際の抽選人数を制限するものではありません
+  totalDrops: 10,
+
+
+  /*
+   * ============================================================
+   * イベントキー
+   * ============================================================
+   *
+   * 日本時間（Asia/Tokyo）の日付から自動生成します。
+   *
+   * 2026年8月14日
+   * ↓
+   * unity-drop-2026-08-14
+   *
+   * 2026年8月15日
+   * ↓
+   * unity-drop-2026-08-15
+   *
+   * そのため、管理者が毎回 eventKey を変更する必要はありません。
+   */
+
+  eventKey: "unity-drop-" + new Intl.DateTimeFormat("ja-JP", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  })
+    .format(new Date())
+    .replace(/\//g, "-")
+
+};
+
+
+/* ==========================================================================
+   【管理者用】DROP内容
+   ==========================================================================
+
+   count = 抽選時の重み
+
+   例：
+
+   200円OFF → 7
+   RARE      → 2
+   SECRET    → 1
+
+   合計10
+
+   ↓
+
+   200円OFF = 70%
+   RARE      = 20%
+   SECRET    = 10%
+
+   ※ GitHub Pagesだけの仕組みなので、
+      全参加者共通の「残り在庫」を管理するものではありません。
+
+   ========================================================================== */
+
+const DROP_ITEMS = [
+
+  {
+    title: "次回イベント 200円OFF",
+
+    message:
+      "次回のUnityイベントで使える特典です。イベントでスタッフにお声がけください。",
+
+    count: 7
+  },
+
+
+  {
+    title: "RARE DROP",
+
+    message:
+      "レアドロップ！内容はイベントでスタッフに声をかけてください。",
+
+    count: 2
+  },
+
+
+  {
+    title: "SECRET RARE DROP",
+
+    message:
+      "シークレットレアドロップです。内容はイベントでスタッフにお声がけください。",
+
+    count: 1
+  }
+
+];
+
+
+/* ==========================================================================
+   ここから下は通常変更不要
    ========================================================================== */
 
 (function () {
-  const STORAGE_KEY_OPENED = "unityDropOpened_" + DROP_CONFIG.eventKey;
-  const STORAGE_KEY_RESULT = "unityDropResult_" + DROP_CONFIG.eventKey;
 
-  function $(id) { return document.getElementById(id); }
+
+  /* ------------------------------------------------------------------------
+     localStorage用キー
+
+     日付ごとに自動的に変わります。
+
+     例：
+
+     unityDropOpened_unity-drop-2026-08-14
+
+     unityDropOpened_unity-drop-2026-08-15
+
+     ------------------------------------------------------------------------ */
+
+  const STORAGE_KEY_OPENED =
+    "unityDropOpened_" + DROP_CONFIG.eventKey;
+
+  const STORAGE_KEY_RESULT =
+    "unityDropResult_" + DROP_CONFIG.eventKey;
+
+
+  /* ------------------------------------------------------------------------
+     ID取得
+     ------------------------------------------------------------------------ */
+
+  function $(id) {
+    return document.getElementById(id);
+  }
+
+
+  /* ------------------------------------------------------------------------
+     画面切り替え
+     ------------------------------------------------------------------------ */
 
   function showScreen(id) {
-    const ids = ["screen-intro", "screen-opening", "screen-result", "screen-already", "screen-fallback"];
-    ids.forEach(s => {
-      const el = $(s);
-      if (el) el.classList.remove("is-active");
+
+    const ids = [
+      "screen-intro",
+      "screen-opening",
+      "screen-result",
+      "screen-already",
+      "screen-fallback"
+    ];
+
+
+    ids.forEach(function (screenId) {
+
+      const el = $(screenId);
+
+      if (el) {
+        el.classList.remove("is-active");
+      }
+
     });
+
+
     const target = $(id);
-    if (target) target.classList.add("is-active");
+
+    if (target) {
+      target.classList.add("is-active");
+    }
+
   }
+
+
+  /* ------------------------------------------------------------------------
+     エラー画面
+     ------------------------------------------------------------------------ */
 
   function showFallback(message) {
+
     const el = $("fallback-message");
-    if (el && message) el.textContent = message;
+
+    if (el && message) {
+      el.textContent = message;
+    }
+
     showScreen("screen-fallback");
+
   }
+
+
+  /* ------------------------------------------------------------------------
+     テキスト安全処理
+     ------------------------------------------------------------------------ */
 
   function escapeText(str) {
-    return String(str == null ? "" : str);
+
+    return String(
+      str == null ? "" : str
+    );
+
   }
+
+
+  /* ------------------------------------------------------------------------
+     ランダム抽選
+     ------------------------------------------------------------------------
+
+     countの重みに応じて抽選します。
+
+     例：
+
+     200円OFF  → count 7
+     RARE      → count 2
+     SECRET    → count 1
+
+     ↓
+
+     7 + 2 + 1 = 10
+
+     200円OFF → 70%
+     RARE     → 20%
+     SECRET   → 10%
+
+     ------------------------------------------------------------------------ */
 
   function pickRandomItem() {
-    if (!Array.isArray(DROP_ITEMS) || DROP_ITEMS.length === 0) return null;
 
-    // count（重み）に応じたプールを作り、その中からランダムに1つ選ぶ
-    // 例）count:5 のアイテムはプールに5回、count:1 のアイテムは1回入る
+
+    if (
+      !Array.isArray(DROP_ITEMS) ||
+      DROP_ITEMS.length === 0
+    ) {
+
+      return null;
+
+    }
+
+
     const pool = [];
-    DROP_ITEMS.forEach(item => {
-      const weight = Math.max(1, Number(item.count) || 1);
-      for (let i = 0; i < weight; i++) pool.push(item);
+
+
+    DROP_ITEMS.forEach(function (item) {
+
+
+      const weight =
+        Math.max(
+          1,
+          Number(item.count) || 1
+        );
+
+
+      for (
+        let i = 0;
+        i < weight;
+        i++
+      ) {
+
+        pool.push(item);
+
+      }
+
     });
 
-    const index = Math.floor(Math.random() * pool.length);
+
+    if (pool.length === 0) {
+      return null;
+    }
+
+
+    const index =
+      Math.floor(
+        Math.random() * pool.length
+      );
+
+
     return pool[index];
+
   }
+
+
+  /* ------------------------------------------------------------------------
+     キラキラ演出
+     ------------------------------------------------------------------------ */
 
   function fireSparkles() {
+
+
     const field = $("sparkle-field");
-    if (!field) return;
-    const count = 22;
-    for (let i = 0; i < count; i++) {
-      const s = document.createElement("span");
-      s.className = "sparkle";
-      const angle = Math.random() * Math.PI * 2;
-      const distance = 80 + Math.random() * 140;
-      s.style.setProperty("--sx", `${Math.cos(angle) * distance}px`);
-      s.style.setProperty("--sy", `${Math.sin(angle) * distance}px`);
-      s.style.left = "50%";
-      s.style.top = "50%";
-      field.appendChild(s);
-      const delay = Math.random() * 400;
-      setTimeout(() => s.classList.add("is-firing"), delay);
+
+
+    if (!field) {
+      return;
     }
+
+
+    const count = 22;
+
+
+    for (
+      let i = 0;
+      i < count;
+      i++
+    ) {
+
+
+      const sparkle =
+        document.createElement("span");
+
+
+      sparkle.className = "sparkle";
+
+
+      const angle =
+        Math.random() *
+        Math.PI *
+        2;
+
+
+      const distance =
+        80 +
+        Math.random() *
+        140;
+
+
+      sparkle.style.setProperty(
+        "--sx",
+        `${Math.cos(angle) * distance}px`
+      );
+
+
+      sparkle.style.setProperty(
+        "--sy",
+        `${Math.sin(angle) * distance}px`
+      );
+
+
+      sparkle.style.left = "50%";
+      sparkle.style.top = "50%";
+
+
+      field.appendChild(sparkle);
+
+
+      const delay =
+        Math.random() * 400;
+
+
+      setTimeout(function () {
+
+        sparkle.classList.add(
+          "is-firing"
+        );
+
+      }, delay);
+
+    }
+
   }
+
+
+  /* ------------------------------------------------------------------------
+     抽選結果を画面に表示
+     ------------------------------------------------------------------------ */
 
   function renderResultInto(prefixId, item) {
-    const titleEl = $(prefixId + "-title");
-    const messageEl = $(prefixId + "-message");
-    if (titleEl) titleEl.textContent = escapeText(item.title);
-    if (messageEl) messageEl.textContent = escapeText(item.message);
+
+
+    if (!item) {
+      return;
+    }
+
+
+    const titleEl =
+      $(prefixId + "-title");
+
+
+    const messageEl =
+      $(prefixId + "-message");
+
+
+    if (titleEl) {
+
+      titleEl.textContent =
+        escapeText(item.title);
+
+    }
+
+
+    if (messageEl) {
+
+      messageEl.textContent =
+        escapeText(item.message);
+
+    }
+
   }
+
+
+  /* ------------------------------------------------------------------------
+     DROPを開く
+     ------------------------------------------------------------------------ */
 
   function openDrop() {
-    if (!Array.isArray(DROP_ITEMS) || DROP_ITEMS.length === 0) {
-      showFallback("現在DROPの内容が準備されていません。運営にお問い合わせください。");
+
+
+    /* DROP未設定チェック */
+
+    if (
+      !Array.isArray(DROP_ITEMS) ||
+      DROP_ITEMS.length === 0
+    ) {
+
+      showFallback(
+        "現在DROPの内容が準備されていません。運営にお問い合わせください。"
+      );
+
       return;
+
     }
 
-    const item = pickRandomItem();
 
-    showScreen("screen-opening");
+    /* 抽選 */
+
+    const item =
+      pickRandomItem();
+
+
+    if (!item) {
+
+      showFallback(
+        "DROPの抽選に失敗しました。ページを再読み込みしてお試しください。"
+      );
+
+      return;
+
+    }
+
+
+    /* 開封演出 */
+
+    showScreen(
+      "screen-opening"
+    );
+
+
     fireSparkles();
 
-    window.setTimeout(() => {
+
+    /* 約2秒後に結果表示 */
+
+    window.setTimeout(function () {
+
+
       try {
-        localStorage.setItem(STORAGE_KEY_OPENED, "1");
-        localStorage.setItem(STORAGE_KEY_RESULT, JSON.stringify(item));
+
+
+        /*
+         * この端末では本日すでに引いた
+         * という情報を保存
+         */
+
+        localStorage.setItem(
+          STORAGE_KEY_OPENED,
+          "1"
+        );
+
+
+        /*
+         * 抽選結果も保存
+         *
+         * もう一度アクセスした場合でも
+         * 同じ結果を表示できる
+         */
+
+        localStorage.setItem(
+          STORAGE_KEY_RESULT,
+          JSON.stringify(item)
+        );
+
+
       } catch (err) {
-        // localStorageが使えない環境でも、今回の結果表示自体は継続する
-        console.warn("UNITY DROP: localStorageへの保存に失敗しました。", err);
+
+
+        /*
+         * localStorageが使えなくても
+         * 今回の抽選結果は表示する
+         */
+
+        console.warn(
+          "UNITY DROP: localStorageへの保存に失敗しました。",
+          err
+        );
+
       }
-      renderResultInto("result", item);
-      showScreen("screen-result");
+
+
+      /* 結果表示 */
+
+      renderResultInto(
+        "result",
+        item
+      );
+
+
+      showScreen(
+        "screen-result"
+      );
+
+
     }, 2000);
+
   }
+
+
+  /* ------------------------------------------------------------------------
+     初期化
+     ------------------------------------------------------------------------ */
 
   function init() {
-    const btnOpen = $("btn-open");
+
+
+    /* 開封ボタン */
+
+    const btnOpen =
+      $("btn-open");
+
+
     if (btnOpen) {
-      btnOpen.addEventListener("click", () => {
-        btnOpen.disabled = true;
-        openDrop();
-      });
+
+
+      btnOpen.addEventListener(
+        "click",
+        function () {
+
+
+          /*
+           * 連打防止
+           */
+
+          btnOpen.disabled = true;
+
+
+          openDrop();
+
+        }
+      );
+
     }
+
+
+    /* ----------------------------------------------------------------------
+       今日すでに引いたか確認
+       ---------------------------------------------------------------------- */
 
     let alreadyOpened = false;
+
     let previousResult = null;
+
+
     try {
-      alreadyOpened = localStorage.getItem(STORAGE_KEY_OPENED) === "1";
-      const stored = localStorage.getItem(STORAGE_KEY_RESULT);
-      if (stored) previousResult = JSON.parse(stored);
+
+
+      alreadyOpened =
+        localStorage.getItem(
+          STORAGE_KEY_OPENED
+        ) === "1";
+
+
+      const stored =
+        localStorage.getItem(
+          STORAGE_KEY_RESULT
+        );
+
+
+      if (stored) {
+
+
+        try {
+
+          previousResult =
+            JSON.parse(stored);
+
+        } catch (parseError) {
+
+          previousResult = null;
+
+        }
+
+      }
+
+
     } catch (err) {
-      // localStorageが使えない環境では「毎回引ける」動作にフォールバックする
+
+
+      /*
+       * localStorageが使えない環境では
+       * 毎回引ける状態にフォールバック
+       */
+
       alreadyOpened = false;
+
     }
+
+
+    /* ----------------------------------------------------------------------
+       すでに今日引いている場合
+       ---------------------------------------------------------------------- */
 
     if (alreadyOpened) {
-      if (previousResult && previousResult.title) {
-        renderResultInto("already", previousResult);
+
+
+      if (
+        previousResult &&
+        previousResult.title
+      ) {
+
+
+        renderResultInto(
+          "already",
+          previousResult
+        );
+
+
       } else {
-        renderResultInto("already", {
-          title: "DROP済み",
-          message: "このDROPはすでに開いています。"
-        });
+
+
+        renderResultInto(
+          "already",
+          {
+            title: "DROP済み",
+
+            message:
+              "このDROPはすでに開いています。"
+          }
+        );
+
       }
-      showScreen("screen-already");
+
+
+      showScreen(
+        "screen-already"
+      );
+
+
       return;
+
     }
 
-    showScreen("screen-intro");
+
+    /* ----------------------------------------------------------------------
+       初回アクセス
+       ---------------------------------------------------------------------- */
+
+    showScreen(
+      "screen-intro"
+    );
+
   }
 
-  // 想定外のエラーが起きても画面が真っ白にならないようにする
-  window.addEventListener("error", () => {
-    showFallback("予期しないエラーが発生しました。ページを再読み込みしてお試しください。");
-  });
 
-  document.addEventListener("DOMContentLoaded", () => {
-    try {
-      init();
-    } catch (err) {
-      console.error("UNITY DROP init error:", err);
-      showFallback("予期しないエラーが発生しました。ページを再読み込みしてお試しください。");
+  /* ==========================================================================
+     想定外エラー対策
+     ========================================================================== */
+
+  window.addEventListener(
+    "error",
+    function () {
+
+
+      showFallback(
+        "予期しないエラーが発生しました。ページを再読み込みしてお試しください。"
+      );
+
+
     }
-  });
+  );
+
+
+  /* ==========================================================================
+     DOM読み込み完了
+     ========================================================================== */
+
+  document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+
+      try {
+
+
+        init();
+
+
+      } catch (err) {
+
+
+        console.error(
+          "UNITY DROP init error:",
+          err
+        );
+
+
+        showFallback(
+          "予期しないエラーが発生しました。ページを再読み込みしてお試しください。"
+        );
+
+      }
+
+    }
+  );
+
+
 })();
