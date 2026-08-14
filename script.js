@@ -1,354 +1,1352 @@
 /* ==========================================================================
-   UNITY DROP（シンプル版）— script.js
+   UNITY DROP
+   Cinematic Gacha Edition
    ==========================================================================
-   ★★★ 管理者が変更するのは基本的にこの2か所だけです ★★★
+
+   管理者が基本的に変更するのは DROP_ITEMS の部分だけです。
+
+   ・日本時間で1日1回
+   ・日付が変わると自動的に新しいDROP
+   ・同一端末 / 同一ブラウザ単位
+   ・GitHub Pagesのみで動作
    ========================================================================== */
 
-// ==================================================
-// 【管理者用メモ】今回のイベントの想定人数
-// ※この数字は抽選回数の制限には使われません（下記【注意】参照）。
-//   「今回は何人分を想定しているか」を管理者が把握しておくための
-//   メモとして使ってください。
-// ==================================================
-const DROP_CONFIG = {
-  totalDrops: 10
-};
-
-// ==================================================
-// 【注意】1日1回の制限について
-// --------------------------------------------------
-// 「同一端末・同一ブラウザでは、日本時間で1日1回だけ引ける」という
-// 制限は自動化されています（下のロジックで日付から自動計算されます）。
-// totalDrops を変更しても「1日◯人まで」という全体の人数制限には
-// なりません。GitHub Pages + localStorage という構成上、
-// 全参加者を横断して「あと何人分残っているか」を数える方法が
-// ないためです（別端末なら誰でも1日1回引けます）。
-// ==================================================
-
-// ==================================================
-// 【管理者用】DROPの内容一覧（COMMON / RARE / SECRET RARE）
-// count は出現の重みです。合計に対する比率で抽選されます。
-// 例）COMMON:7, RARE:2, SECRET RARE:1 → 合計10のうち
-//     COMMON 70% / RARE 20% / SECRET RARE 10%
-// ==================================================
-const DROP_ITEMS = [
-  {
-    rarity: "common",
-    title: "次回イベント 200円OFF",
-    message: "次回のUnityイベントで使える特典です。受付でスタッフにお伝えください。",
-    count: 7
-  },
-  {
-    rarity: "rare",
-    title: "RARE DROP",
-    message: "少し特別な特典です。次回イベントでスタッフにお声がけください。",
-    count: 2
-  },
-  {
-    rarity: "secret",
-    title: "SECRET RARE DROP",
-    message: "今回は特別なDROPです。次回イベントでスタッフにお声がけください。",
-    count: 1
-  }
-];
 
 /* ==========================================================================
-   ここから下はロジックです（通常は変更不要）
+   DROP CONFIG
+   ========================================================================== */
+
+const DROP_CONFIG = {
+
+  // 管理者用メモ
+  // ※全体人数制限ではありません
+  totalDrops: 10
+
+};
+
+
+/* ==========================================================================
+   DROP ITEMS
+   ==========================================================================
+
+   count = 出現確率の重み
+
+   7 / 2 / 1
+   ↓
+   COMMON       70%
+   RARE         20%
+   SECRET RARE  10%
+
+   ※GitHub Pages + localStorage構成なので、
+   全参加者共通の残数管理はしていません。
+   ========================================================================== */
+
+const DROP_ITEMS = [
+
+  {
+    rarity: "common",
+
+    title: "次回イベント 200円OFF",
+
+    message:
+      "次回のUnityイベントで使える特典です。受付でスタッフにお伝えください。",
+
+    count: 7
+  },
+
+  {
+    rarity: "rare",
+
+    title: "RARE DROP",
+
+    message:
+      "少し特別な特典です。次回イベントでスタッフにお声がけください。",
+
+    count: 2
+  },
+
+  {
+    rarity: "secret",
+
+    title: "SECRET RARE DROP",
+
+    message:
+      "今回は特別なDROPです。次回イベントでスタッフにお声がけください。",
+
+    count: 1
+  }
+
+];
+
+
+/* ==========================================================================
+   MAIN
    ========================================================================== */
 
 (function () {
-  const prefersReducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const T = (ms) => prefersReducedMotion ? Math.min(ms, 200) : ms;
-  function wait(ms) { return new Promise(resolve => setTimeout(resolve, T(ms))); }
 
-  /* ---------------------------------------------------------------------
-     日本時間（JST）基準で「YYYY-MM-DD」を求める
-     ブラウザのタイムゾーンに関わらず、常に日本時間の日付になります
-  --------------------------------------------------------------------- */
-  function getJstDateString() {
-    try {
-      // en-CA ロケール＋Asia/Tokyo指定で "YYYY-MM-DD" 形式を安全に取得
-      return new Intl.DateTimeFormat("en-CA", {
-        timeZone: "Asia/Tokyo",
-        year: "numeric", month: "2-digit", day: "2-digit"
-      }).format(new Date());
-    } catch (err) {
-      // 万一Intlが使えない極めて古い環境向けのフォールバック（UTC+9換算）
-      const now = new Date();
-      const jst = new Date(now.getTime() + (9 * 60 + now.getTimezoneOffset()) * 60000);
-      const p = (n) => String(n).padStart(2, "0");
-      return `${jst.getFullYear()}-${p(jst.getMonth() + 1)}-${p(jst.getDate())}`;
-    }
+  "use strict";
+
+
+  /* ------------------------------------------------------------------------
+     DOM
+     ------------------------------------------------------------------------ */
+
+  function $(id) {
+
+    return document.getElementById(id);
+
   }
 
-  const todayKey = "unity-drop-" + getJstDateString();
-  const STORAGE_KEY_OPENED = "unityDropOpened_" + todayKey;
-  const STORAGE_KEY_RESULT = "unityDropResult_" + todayKey;
 
-  function $(id) { return document.getElementById(id); }
+  /* ------------------------------------------------------------------------
+     日本時間
+     ------------------------------------------------------------------------ */
+
+  function getJstDateString() {
+
+    try {
+
+      return new Intl.DateTimeFormat(
+        "en-CA",
+        {
+          timeZone: "Asia/Tokyo",
+
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit"
+        }
+      ).format(new Date());
+
+    } catch (error) {
+
+      const now = new Date();
+
+      const jst = new Date(
+        now.getTime()
+        +
+        (9 * 60 + now.getTimezoneOffset()) * 60000
+      );
+
+      const pad = (value) =>
+        String(value).padStart(2, "0");
+
+      return (
+        jst.getFullYear()
+        +
+        "-"
+        +
+        pad(jst.getMonth() + 1)
+        +
+        "-"
+        +
+        pad(jst.getDate())
+      );
+
+    }
+
+  }
+
+
+  /* ------------------------------------------------------------------------
+     今日のイベントキー
+
+     例：
+
+     unity-drop-2026-08-14
+
+     ↓翌日
+
+     unity-drop-2026-08-15
+     ------------------------------------------------------------------------ */
+
+  const todayKey =
+    "unity-drop-" + getJstDateString();
+
+
+  const STORAGE_KEY_OPENED =
+    "unityDropOpened_" + todayKey;
+
+
+  const STORAGE_KEY_RESULT =
+    "unityDropResult_" + todayKey;
+
+
+  /* ------------------------------------------------------------------------
+     画面切り替え
+     ------------------------------------------------------------------------ */
+
+  const SCREEN_IDS = [
+
+    "screen-intro",
+
+    "screen-opening",
+
+    "screen-result",
+
+    "screen-already",
+
+    "screen-fallback"
+
+  ];
+
 
   function showScreen(id) {
-    const ids = ["screen-intro", "screen-opening", "screen-result", "screen-already", "screen-fallback"];
-    ids.forEach(s => {
-      const el = $(s);
-      if (el) el.classList.remove("is-active");
+
+    SCREEN_IDS.forEach(function (screenId) {
+
+      const element = $(screenId);
+
+      if (element) {
+
+        element.classList.remove("is-active");
+
+      }
+
     });
+
+
     const target = $(id);
-    if (target) target.classList.add("is-active");
+
+    if (target) {
+
+      target.classList.add("is-active");
+
+    }
+
   }
 
-  function showFallback(message) {
-    const el = $("fallback-message");
-    if (el && message) el.textContent = message;
-    showScreen("screen-fallback");
+
+  /* ------------------------------------------------------------------------
+     待機
+
+     ※ prefers-reduced-motion でも短縮しません。
+     今回はガチャ演出そのものを楽しむ仕様。
+     ------------------------------------------------------------------------ */
+
+  function wait(ms) {
+
+    return new Promise(function (resolve) {
+
+      window.setTimeout(resolve, ms);
+
+    });
+
   }
 
-  function escapeText(str) {
-    return String(str == null ? "" : str);
+
+  /* ------------------------------------------------------------------------
+     テキスト
+     ------------------------------------------------------------------------ */
+
+  function safeText(value) {
+
+    return String(
+      value === null || value === undefined
+        ? ""
+        : value
+    );
+
   }
+
+
+  /* ------------------------------------------------------------------------
+     重み抽選
+     ------------------------------------------------------------------------ */
 
   function pickRandomItem() {
-    if (!Array.isArray(DROP_ITEMS) || DROP_ITEMS.length === 0) return null;
-    const pool = [];
-    DROP_ITEMS.forEach(item => {
-      const weight = Math.max(1, Number(item.count) || 1);
-      for (let i = 0; i < weight; i++) pool.push(item);
+
+    if (
+      !Array.isArray(DROP_ITEMS)
+      ||
+      DROP_ITEMS.length === 0
+    ) {
+
+      return null;
+
+    }
+
+
+    let totalWeight = 0;
+
+
+    DROP_ITEMS.forEach(function (item) {
+
+      const weight =
+        Math.max(
+          1,
+          Number(item.count) || 1
+        );
+
+      totalWeight += weight;
+
     });
-    const index = Math.floor(Math.random() * pool.length);
-    return pool[index];
+
+
+    let random =
+      Math.random() * totalWeight;
+
+
+    for (
+      let i = 0;
+      i < DROP_ITEMS.length;
+      i++
+    ) {
+
+      const item = DROP_ITEMS[i];
+
+      const weight =
+        Math.max(
+          1,
+          Number(item.count) || 1
+        );
+
+
+      random -= weight;
+
+
+      if (random < 0) {
+
+        return item;
+
+      }
+
+    }
+
+
+    return DROP_ITEMS[
+      DROP_ITEMS.length - 1
+    ];
+
   }
+
+
+  /* ------------------------------------------------------------------------
+     レアリティ表示
+     ------------------------------------------------------------------------ */
 
   function rarityLabel(rarity) {
-    if (rarity === "secret") return "✦ SECRET RARE ✦";
-    if (rarity === "rare") return "RARE";
+
+    if (rarity === "secret") {
+
+      return "✦ SECRET RARE ✦";
+
+    }
+
+    if (rarity === "rare") {
+
+      return "RARE DROP";
+
+    }
+
     return "";
+
   }
 
-  /* ---------------------------------------------------------------------
-     演出用パーツ生成
-  --------------------------------------------------------------------- */
+
+  /* ------------------------------------------------------------------------
+     結果表示
+     ------------------------------------------------------------------------ */
+
+  function renderResultInto(
+    prefix,
+    item
+  ) {
+
+    if (!item) {
+
+      return;
+
+    }
+
+
+    const title =
+      $(prefix + "-title");
+
+    const message =
+      $(prefix + "-message");
+
+    const rarity =
+      $(prefix + "-rarity-label");
+
+
+    if (title) {
+
+      title.textContent =
+        safeText(item.title);
+
+    }
+
+
+    if (message) {
+
+      message.textContent =
+        safeText(item.message);
+
+    }
+
+
+    if (rarity) {
+
+      const r =
+        item.rarity || "common";
+
+
+      if (
+        r === "rare"
+        ||
+        r === "secret"
+      ) {
+
+        rarity.textContent =
+          rarityLabel(r);
+
+        rarity.setAttribute(
+          "data-rarity",
+          r
+        );
+
+      } else {
+
+        rarity.textContent = "";
+
+        rarity.removeAttribute(
+          "data-rarity"
+        );
+
+      }
+
+    }
+
+  }
+
+
+  /* ==========================================================================
+     PARTICLES
+     ========================================================================== */
+
   function spawnGatherParticles() {
-    const field = $("gather-field");
-    if (!field) return;
+
+    const field =
+      $("gather-field");
+
+
+    if (!field) {
+
+      return;
+
+    }
+
+
     field.innerHTML = "";
-    const count = 18;
-    for (let i = 0; i < count; i++) {
-      const p = document.createElement("span");
-      p.className = "gather-particle";
-      const angle = Math.random() * Math.PI * 2;
-      const distance = 90 + Math.random() * 70;
-      p.style.setProperty("--gx", `${Math.cos(angle) * distance}px`);
-      p.style.setProperty("--gy", `${Math.sin(angle) * distance}px`);
-      field.appendChild(p);
-      setTimeout(() => p.classList.add("is-gathering"), Math.random() * 200);
+
+
+    const count = 32;
+
+
+    for (
+      let i = 0;
+      i < count;
+      i++
+    ) {
+
+      const particle =
+        document.createElement("span");
+
+
+      particle.className =
+        "gather-particle";
+
+
+      const angle =
+        Math.random() * Math.PI * 2;
+
+
+      const distance =
+        100 + Math.random() * 170;
+
+
+      const x =
+        Math.cos(angle) * distance;
+
+
+      const y =
+        Math.sin(angle) * distance;
+
+
+      particle.style.left = "50%";
+
+      particle.style.top = "50%";
+
+
+      particle.style.setProperty(
+        "--gx",
+        x + "px"
+      );
+
+
+      particle.style.setProperty(
+        "--gy",
+        y + "px"
+      );
+
+
+      particle.style.animationDelay =
+        Math.random() * .5 + "s";
+
+
+      field.appendChild(
+        particle
+      );
+
     }
+
   }
 
-  function spawnBurstParticles(rarity) {
-    const field = $("burst-field");
-    if (!field) return;
+
+  /* ==========================================================================
+     BURST PARTICLES
+     ========================================================================== */
+
+  function spawnBurstParticles(
+    rarity
+  ) {
+
+    const field =
+      $("burst-field");
+
+
+    if (!field) {
+
+      return;
+
+    }
+
+
     field.innerHTML = "";
-    const count = rarity === "secret" ? 70 : rarity === "rare" ? 42 : 22;
-    const maxDistance = rarity === "secret" ? 260 : rarity === "rare" ? 190 : 130;
-    for (let i = 0; i < count; i++) {
-      const p = document.createElement("span");
-      p.className = "burst-particle";
-      const angle = Math.random() * Math.PI * 2;
-      const distance = 60 + Math.random() * maxDistance;
-      p.style.setProperty("--bx", `${Math.cos(angle) * distance}px`);
-      p.style.setProperty("--by", `${Math.sin(angle) * distance}px`);
-      field.appendChild(p);
-      requestAnimationFrame(() => p.classList.add("is-firing"));
+
+
+    let count = 32;
+
+    let distance = 180;
+
+
+    if (rarity === "rare") {
+
+      count = 55;
+
+      distance = 240;
+
     }
+
+
+    if (rarity === "secret") {
+
+      count = 90;
+
+      distance = 330;
+
+    }
+
+
+    for (
+      let i = 0;
+      i < count;
+      i++
+    ) {
+
+      const particle =
+        document.createElement("span");
+
+
+      particle.className =
+        "burst-particle";
+
+
+      const angle =
+        Math.random() * Math.PI * 2;
+
+
+      const length =
+        50
+        +
+        Math.random() * distance;
+
+
+      const x =
+        Math.cos(angle) * length;
+
+
+      const y =
+        Math.sin(angle) * length;
+
+
+      particle.style.setProperty(
+        "--bx",
+        x + "px"
+      );
+
+
+      particle.style.setProperty(
+        "--by",
+        y + "px"
+      );
+
+
+      particle.style.animationDelay =
+        Math.random() * .18 + "s";
+
+
+      field.appendChild(
+        particle
+      );
+
+
+      requestAnimationFrame(function () {
+
+        particle.classList.add(
+          "is-firing"
+        );
+
+      });
+
+    }
+
   }
 
-  const TEASE_LINES = ["UNITY DROP", "LOADING...", "YOUR DROP IS COMING..."];
-  async function playTeaseText() {
-    const el = $("tease-text");
-    if (!el) return;
-    for (const line of TEASE_LINES) {
-      el.textContent = line;
-      el.style.animation = "none";
-      void el.offsetWidth; // reflow でアニメーションをリセット
-      el.style.animation = "";
-      await wait(430);
-    }
-  }
 
-  /* ---------------------------------------------------------------------
-     ガチャ演出のオーケストレーション（フェーズごとに演出を変化させる）
-  --------------------------------------------------------------------- */
-  const phaseIds = [
-    "phase-blackout", "phase-logo", "phase-rings", "phase-tease",
-    "phase-heartbeat", "phase-box", "phase-blackout-extra", "phase-special", "phase-burst"
+  /* ==========================================================================
+     PHASE CONTROL
+     ========================================================================== */
+
+  const PHASE_IDS = [
+
+    "phase-blackout",
+
+    "phase-logo",
+
+    "phase-rings",
+
+    "phase-tease",
+
+    "phase-heartbeat",
+
+    "phase-box",
+
+    "phase-blackout-extra",
+
+    "phase-special",
+
+    "phase-burst"
+
   ];
+
+
   function setPhase(id) {
-    phaseIds.forEach(p => {
-      const el = $(p);
-      if (el) el.classList.remove("is-active");
+
+    PHASE_IDS.forEach(function (phaseId) {
+
+      const element =
+        $(phaseId);
+
+
+      if (element) {
+
+        element.classList.remove(
+          "is-active"
+        );
+
+      }
+
     });
-    const target = $(id);
-    if (target) target.classList.add("is-active");
+
+
+    const target =
+      $(id);
+
+
+    if (target) {
+
+      target.classList.add(
+        "is-active"
+      );
+
+    }
+
   }
 
-  async function playCinematic(item) {
-    const rarity = item.rarity || "common";
-    showScreen("screen-opening");
 
-    // Phase 0（0.0〜1.0秒）：画面が暗転しDROP開始
-    setPhase("phase-blackout");
+  /* ==========================================================================
+     TEASE TEXT
+     ========================================================================== */
+
+  async function playTeaseText() {
+
+    const element =
+      $("tease-text");
+
+
+    if (!element) {
+
+      await wait(2200);
+
+      return;
+
+    }
+
+
+    const lines = [
+
+      "UNITY DROP",
+
+      "LOADING...",
+
+      "YOUR DROP IS COMING...",
+
+      "ALMOST THERE..."
+
+    ];
+
+
+    for (
+      let i = 0;
+      i < lines.length;
+      i++
+    ) {
+
+      element.textContent =
+        lines[i];
+
+
+      element.style.animation =
+        "none";
+
+
+      void element.offsetWidth;
+
+
+      element.style.animation =
+        "";
+
+
+      await wait(650);
+
+    }
+
+  }
+
+
+  /* ==========================================================================
+     BURST
+     ========================================================================== */
+
+  async function playBurst(
+    rarity
+  ) {
+
+    setPhase(
+      "phase-burst"
+    );
+
+
+    const flash =
+      $("burst-flash");
+
+
+    const rarityElement =
+      $("burst-rarity");
+
+
+    const rings =
+      $("burst-rings");
+
+
+    if (flash) {
+
+      flash.classList.remove(
+        "is-flashing",
+        "is-flashing--strong"
+      );
+
+      void flash.offsetWidth;
+
+    }
+
+
+    if (rarityElement) {
+
+      rarityElement.classList.remove(
+        "is-shown"
+      );
+
+      rarityElement.textContent =
+        rarityLabel(rarity);
+
+    }
+
+
+    if (rings) {
+
+      rings.innerHTML = "";
+
+    }
+
+
+    /* SECRETなら強いフラッシュ */
+
+    if (
+      flash
+      &&
+      rarity === "secret"
+    ) {
+
+      flash.classList.add(
+        "is-flashing--strong"
+      );
+
+    } else if (flash) {
+
+      flash.classList.add(
+        "is-flashing"
+      );
+
+    }
+
+
+    /* 少し溜める */
+
+    await wait(500);
+
+
+    /* レアリティ表示 */
+
+    if (rarityElement) {
+
+      rarityElement.classList.add(
+        "is-shown"
+      );
+
+    }
+
+
+    /* 粒子 */
+
+    spawnBurstParticles(
+      rarity
+    );
+
+
+    /* リング */
+
+    if (rings) {
+
+      const ring =
+        document.createElement("div");
+
+      ring.className =
+        "burst-rings";
+
+      rings.appendChild(
+        ring
+      );
+
+    }
+
+
+    if (rarity === "secret") {
+
+      await wait(2200);
+
+    } else if (rarity === "rare") {
+
+      await wait(1800);
+
+    } else {
+
+      await wait(1500);
+
+    }
+
+  }
+
+
+  /* ==========================================================================
+     CINEMATIC MAIN
+     ========================================================================== */
+
+  async function playCinematic(
+    item
+  ) {
+
+    const rarity =
+      item.rarity || "common";
+
+
+    showScreen(
+      "screen-opening"
+    );
+
+
+    /* --------------------------------------------------------------
+       0. 暗転
+       -------------------------------------------------------------- */
+
+    setPhase(
+      "phase-blackout"
+    );
+
     await wait(1000);
 
-    // Phase 1（1.0〜2.0秒）：Unityロゴが出現、回転・発光
-    setPhase("phase-logo");
-    await wait(1000);
 
-    // Phase 2（2.0〜3.0秒）：光のリングが広がり、粒子が集まる
-    setPhase("phase-rings");
+    /* --------------------------------------------------------------
+       1. Unityロゴ
+       -------------------------------------------------------------- */
+
+    setPhase(
+      "phase-logo"
+    );
+
+    await wait(1700);
+
+
+    /* --------------------------------------------------------------
+       2. リング・粒子
+       -------------------------------------------------------------- */
+
+    setPhase(
+      "phase-rings"
+    );
+
     spawnGatherParticles();
-    await wait(1000);
 
-    // Phase 3（3.0〜4.0秒）：煽りテキスト
-    setPhase("phase-tease");
+    await wait(1900);
+
+
+    /* --------------------------------------------------------------
+       3. 煽り
+       -------------------------------------------------------------- */
+
+    setPhase(
+      "phase-tease"
+    );
+
     await playTeaseText();
 
-    // Phase 4（4.0〜5.0秒）：一度暗くし、鼓動のような演出＋光が強くなる
-    setPhase("phase-heartbeat");
-    await wait(1000);
 
-    // Phase 5（5.0〜6.0秒）：DROPボックスが出現、開く直前の演出
-    setPhase("phase-box");
-    await wait(1000);
+    /* --------------------------------------------------------------
+       4. 心拍
+       -------------------------------------------------------------- */
 
-    // ここから先は結果（レアリティ）によって尺・演出を変える
-    // ※ここまでの演出はレアリティに関わらず共通のため、結果は一切示唆されません
-    if (rarity === "rare" || rarity === "secret") {
-      setPhase("phase-blackout-extra");
-      await wait(450);
+    setPhase(
+      "phase-heartbeat"
+    );
+
+    await wait(1900);
+
+
+    /* --------------------------------------------------------------
+       5. DROP BOX
+       -------------------------------------------------------------- */
+
+    setPhase(
+      "phase-box"
+    );
+
+    await wait(2200);
+
+
+    /* --------------------------------------------------------------
+       RARE追加溜め
+       -------------------------------------------------------------- */
+
+    if (
+      rarity === "rare"
+      ||
+      rarity === "secret"
+    ) {
+
+      setPhase(
+        "phase-blackout-extra"
+      );
+
+      await wait(1100);
+
     }
-    if (rarity === "secret") {
-      setPhase("phase-special");
-      await wait(800);
+
+
+    /* --------------------------------------------------------------
+       SECRET追加演出
+       -------------------------------------------------------------- */
+
+    if (
+      rarity === "secret"
+    ) {
+
+      setPhase(
+        "phase-special"
+      );
+
+      await wait(1600);
+
     }
 
-    // Phase 6：光が最大になり、粒子・フラッシュ、カードが開く → 結果表示
-    setPhase("phase-burst");
-    const flash = $("burst-flash");
-    const burstRarityEl = $("burst-rarity");
-    flash.classList.remove("is-flashing", "is-flashing--strong");
-    burstRarityEl.classList.remove("is-shown");
-    void flash.offsetWidth;
 
-    burstRarityEl.textContent = rarityLabel(rarity);
+    /* --------------------------------------------------------------
+       最終爆発
+       -------------------------------------------------------------- */
 
-    if (rarity === "secret") {
-      flash.classList.add("is-flashing--strong");
-    } else {
-      flash.classList.add("is-flashing");
-    }
+    await playBurst(
+      rarity
+    );
+
+
+    /* --------------------------------------------------------------
+       結果画面
+
+       ★ここが重要
+
+       演出終了後に必ずその場で結果を表示
+       -------------------------------------------------------------- */
+
+    renderResultInto(
+      "result",
+      item
+    );
+
+
     await wait(150);
 
-    if (rarityLabel(rarity)) burstRarityEl.classList.add("is-shown");
-    spawnBurstParticles(rarity);
 
-    const burstHold = rarity === "secret" ? 1500 : rarity === "rare" ? 1100 : 900;
-    await wait(burstHold);
+    showScreen(
+      "screen-result"
+    );
 
-    renderResultInto("result", item, rarity);
-    showScreen("screen-result");
   }
 
-  /* ---------------------------------------------------------------------
-     結果表示
-  --------------------------------------------------------------------- */
-  function renderResultInto(prefixId, item, rarity) {
-    const titleEl = $(prefixId + "-title");
-    const messageEl = $(prefixId + "-message");
-    const labelEl = $(prefixId + "-rarity-label");
-    if (titleEl) titleEl.textContent = escapeText(item.title);
-    if (messageEl) messageEl.textContent = escapeText(item.message);
-    if (labelEl) {
-      const r = rarity || item.rarity || "";
-      if (r === "rare" || r === "secret") {
-        labelEl.textContent = rarityLabel(r);
-        labelEl.setAttribute("data-rarity", r);
-      } else {
-        labelEl.textContent = "";
-        labelEl.removeAttribute("data-rarity");
-      }
-    }
-  }
 
-  /* ---------------------------------------------------------------------
-     DROPを開く（ボタン押下）
-  --------------------------------------------------------------------- */
+  /* ==========================================================================
+     DROP OPEN
+     ========================================================================== */
+
   async function openDrop() {
-    if (!Array.isArray(DROP_ITEMS) || DROP_ITEMS.length === 0) {
-      showFallback("現在DROPの内容が準備されていません。運営にお問い合わせください。");
+
+    if (
+      !Array.isArray(DROP_ITEMS)
+      ||
+      DROP_ITEMS.length === 0
+    ) {
+
+      showFallback(
+        "現在DROPの内容が準備されていません。"
+      );
+
       return;
+
     }
 
-    const item = pickRandomItem();
+
+    const item =
+      pickRandomItem();
+
+
     if (!item) {
-      showFallback("現在DROPの内容が準備されていません。運営にお問い合わせください。");
+
+      showFallback(
+        "DROPの抽選に失敗しました。"
+      );
+
       return;
+
     }
+
+
+    /* --------------------------------------------------------------
+       先に結果を保存
+
+       演出中にページが閉じても結果が残る
+       -------------------------------------------------------------- */
 
     try {
-      localStorage.setItem(STORAGE_KEY_OPENED, "1");
-      localStorage.setItem(STORAGE_KEY_RESULT, JSON.stringify(item));
-    } catch (err) {
-      console.warn("UNITY DROP: localStorageへの保存に失敗しました。", err);
+
+      localStorage.setItem(
+        STORAGE_KEY_OPENED,
+        "1"
+      );
+
+
+      localStorage.setItem(
+        STORAGE_KEY_RESULT,
+        JSON.stringify(item)
+      );
+
+    } catch (error) {
+
+      console.warn(
+        "UNITY DROP localStorage error:",
+        error
+      );
+
     }
 
-    await playCinematic(item);
+
+    /* --------------------------------------------------------------
+       演出開始
+       -------------------------------------------------------------- */
+
+    try {
+
+      await playCinematic(
+        item
+      );
+
+    } catch (error) {
+
+      console.error(
+        "UNITY DROP cinematic error:",
+        error
+      );
+
+
+      /*
+       * 演出でエラーが発生しても
+       * 結果画面には必ず到達させる
+       */
+
+      renderResultInto(
+        "result",
+        item
+      );
+
+
+      showScreen(
+        "screen-result"
+      );
+
+    }
+
   }
 
-  /* ---------------------------------------------------------------------
-     初期化
-  --------------------------------------------------------------------- */
-  function init() {
-    const btnOpen = $("btn-open");
-    if (btnOpen) {
-      btnOpen.addEventListener("click", () => {
-        btnOpen.disabled = true;
-        openDrop();
-      });
+
+  /* ==========================================================================
+     FALLBACK
+     ========================================================================== */
+
+  function showFallback(
+    message
+  ) {
+
+    const element =
+      $("fallback-message");
+
+
+    if (element) {
+
+      element.textContent =
+        message;
+
     }
 
-    let alreadyOpened = false;
-    let previousResult = null;
-    try {
-      alreadyOpened = localStorage.getItem(STORAGE_KEY_OPENED) === "1";
-      const stored = localStorage.getItem(STORAGE_KEY_RESULT);
-      if (stored) previousResult = JSON.parse(stored);
-    } catch (err) {
-      alreadyOpened = false;
+
+    showScreen(
+      "screen-fallback"
+    );
+
+  }
+
+
+  /* ==========================================================================
+     INIT
+     ========================================================================== */
+
+  function init() {
+
+    const button =
+      $("btn-open");
+
+
+    if (button) {
+
+      button.addEventListener(
+        "click",
+        async function () {
+
+          if (
+            button.disabled
+          ) {
+
+            return;
+
+          }
+
+
+          button.disabled = true;
+
+
+          try {
+
+            await openDrop();
+
+          } catch (error) {
+
+            console.error(
+              "UNITY DROP error:",
+              error
+            );
+
+          }
+
+        }
+      );
+
     }
+
+
+    /* --------------------------------------------------------------
+       今日すでに引いたか確認
+       -------------------------------------------------------------- */
+
+    let alreadyOpened =
+      false;
+
+
+    let previousResult =
+      null;
+
+
+    try {
+
+      alreadyOpened =
+        localStorage.getItem(
+          STORAGE_KEY_OPENED
+        ) === "1";
+
+
+      const stored =
+        localStorage.getItem(
+          STORAGE_KEY_RESULT
+        );
+
+
+      if (stored) {
+
+        previousResult =
+          JSON.parse(stored);
+
+      }
+
+    } catch (error) {
+
+      console.warn(
+        "UNITY DROP storage read error:",
+        error
+      );
+
+    }
+
+
+    /* --------------------------------------------------------------
+       すでに引いている
+       -------------------------------------------------------------- */
 
     if (alreadyOpened) {
-      if (previousResult && previousResult.title) {
-        renderResultInto("already", previousResult, previousResult.rarity);
+
+      if (
+        previousResult
+        &&
+        previousResult.title
+      ) {
+
+        renderResultInto(
+          "already",
+          previousResult
+        );
+
       } else {
-        renderResultInto("already", { title: "DROP済み", message: "本日分のDROPはすでに開いています。" }, "");
+
+        renderResultInto(
+          "already",
+          {
+            rarity: "common",
+
+            title: "DROP済み",
+
+            message:
+              "本日分のDROPはすでに開いています。"
+          }
+        );
+
       }
-      showScreen("screen-already");
+
+
+      showScreen(
+        "screen-already"
+      );
+
+
       return;
+
     }
 
-    showScreen("screen-intro");
+
+    /* --------------------------------------------------------------
+       初回
+       -------------------------------------------------------------- */
+
+    showScreen(
+      "screen-intro"
+    );
+
   }
 
-  window.addEventListener("error", () => {
-    showFallback("予期しないエラーが発生しました。ページを再読み込みしてお試しください。");
-  });
 
-  document.addEventListener("DOMContentLoaded", () => {
-    try {
-      init();
-    } catch (err) {
-      console.error("UNITY DROP init error:", err);
-      showFallback("予期しないエラーが発生しました。ページを再読み込みしてお試しください。");
+  /* ==========================================================================
+     ERROR HANDLING
+     ========================================================================== */
+
+  window.addEventListener(
+    "error",
+    function (event) {
+
+      console.error(
+        "UNITY DROP global error:",
+        event.error || event.message
+      );
+
     }
-  });
+  );
+
+
+  window.addEventListener(
+    "unhandledrejection",
+    function (event) {
+
+      console.error(
+        "UNITY DROP promise error:",
+        event.reason
+      );
+
+    }
+  );
+
+
+  /* ==========================================================================
+     START
+     ========================================================================== */
+
+  if (
+    document.readyState === "loading"
+  ) {
+
+    document.addEventListener(
+      "DOMContentLoaded",
+      init
+    );
+
+  } else {
+
+    init();
+
+  }
+
+
 })();
