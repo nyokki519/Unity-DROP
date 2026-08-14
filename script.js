@@ -1,14 +1,14 @@
 /* ==========================================================================
    UNITY DROP
    Cinematic Gacha Edition
-   ==========================================================================
-
-   管理者が基本的に変更するのは DROP_ITEMS の部分だけです。
+   + CINEMATIC SOUND EDITION
 
    ・日本時間で1日1回
    ・日付が変わると自動的に新しいDROP
    ・同一端末 / 同一ブラウザ単位
    ・GitHub Pagesのみで動作
+   ・HTML / CSS変更不要
+   ・Web Audio APIによる演出同期サウンド
    ========================================================================== */
 
 
@@ -18,8 +18,6 @@
 
 const DROP_CONFIG = {
 
-  // 管理者用メモ
-  // ※全体人数制限ではありません
   totalDrops: 100
 
 };
@@ -27,18 +25,6 @@ const DROP_CONFIG = {
 
 /* ==========================================================================
    DROP ITEMS
-   ==========================================================================
-
-   count = 出現確率の重み
-
-   7 / 2 / 1
-   ↓
-   COMMON       70%
-   RARE         20%
-   SECRET RARE  10%
-
-   ※GitHub Pages + localStorage構成なので、
-   全参加者共通の残数管理はしていません。
    ========================================================================== */
 
 const DROP_ITEMS = [
@@ -88,9 +74,9 @@ const DROP_ITEMS = [
   "use strict";
 
 
-  /* ------------------------------------------------------------------------
+  /* ==========================================================================
      DOM
-     ------------------------------------------------------------------------ */
+     ========================================================================== */
 
   function $(id) {
 
@@ -99,9 +85,868 @@ const DROP_ITEMS = [
   }
 
 
-  /* ------------------------------------------------------------------------
+  /* ==========================================================================
+     AUDIO ENGINE
+     ========================================================================== */
+
+  let audioContext = null;
+
+  let masterGain = null;
+
+  let ambienceGain = null;
+
+
+  function initAudio() {
+
+    if (audioContext) {
+
+      if (audioContext.state === "suspended") {
+
+        audioContext.resume().catch(() => {});
+
+      }
+
+      return;
+
+    }
+
+
+    try {
+
+      const AudioContext =
+        window.AudioContext ||
+        window.webkitAudioContext;
+
+
+      if (!AudioContext) {
+
+        console.warn(
+          "Web Audio API is not supported."
+        );
+
+        return;
+
+      }
+
+
+      audioContext =
+        new AudioContext();
+
+
+      masterGain =
+        audioContext.createGain();
+
+
+      masterGain.gain.value = 0.72;
+
+
+      masterGain.connect(
+        audioContext.destination
+      );
+
+
+      ambienceGain =
+        audioContext.createGain();
+
+
+      ambienceGain.gain.value = 0;
+
+
+      ambienceGain.connect(
+        masterGain
+      );
+
+
+    } catch (error) {
+
+      console.warn(
+        "Audio initialization failed:",
+        error
+      );
+
+    }
+
+  }
+
+
+  function audioReady() {
+
+    if (!audioContext) {
+
+      return false;
+
+    }
+
+
+    if (
+      audioContext.state === "suspended"
+    ) {
+
+      audioContext.resume().catch(() => {});
+
+    }
+
+
+    return true;
+
+  }
+
+
+  /* --------------------------------------------------------------------------
+     Oscillator helper
+     -------------------------------------------------------------------------- */
+
+  function tone(
+    frequency,
+    duration,
+    options = {}
+  ) {
+
+    if (!audioReady()) {
+
+      return;
+
+    }
+
+
+    const now =
+      audioContext.currentTime;
+
+
+    const osc =
+      audioContext.createOscillator();
+
+
+    const gain =
+      audioContext.createGain();
+
+
+    const type =
+      options.type || "sine";
+
+
+    const volume =
+      options.volume ?? 0.15;
+
+
+    const attack =
+      options.attack ?? 0.01;
+
+
+    const release =
+      options.release ?? duration;
+
+
+    osc.type = type;
+
+
+    osc.frequency.setValueAtTime(
+      frequency,
+      now
+    );
+
+
+    if (options.endFrequency) {
+
+      osc.frequency.exponentialRampToValueAtTime(
+        Math.max(20, options.endFrequency),
+        now + duration
+      );
+
+    }
+
+
+    gain.gain.setValueAtTime(
+      0.0001,
+      now
+    );
+
+
+    gain.gain.exponentialRampToValueAtTime(
+      Math.max(0.0001, volume),
+      now + attack
+    );
+
+
+    gain.gain.exponentialRampToValueAtTime(
+      0.0001,
+      now + Math.max(
+        attack + 0.01,
+        release
+      )
+    );
+
+
+    osc.connect(gain);
+
+    gain.connect(masterGain);
+
+
+    osc.start(now);
+
+    osc.stop(
+      now + duration + 0.05
+    );
+
+  }
+
+
+  /* --------------------------------------------------------------------------
+     Noise helper
+     -------------------------------------------------------------------------- */
+
+  function noise(
+    duration,
+    volume = 0.1,
+    filterFrequency = 1800
+  ) {
+
+    if (!audioReady()) {
+
+      return;
+
+    }
+
+
+    const bufferSize =
+      audioContext.sampleRate * duration;
+
+
+    const buffer =
+      audioContext.createBuffer(
+        1,
+        bufferSize,
+        audioContext.sampleRate
+      );
+
+
+    const data =
+      buffer.getChannelData(0);
+
+
+    for (
+      let i = 0;
+      i < bufferSize;
+      i++
+    ) {
+
+      data[i] =
+        Math.random() * 2 - 1;
+
+    }
+
+
+    const source =
+      audioContext.createBufferSource();
+
+
+    source.buffer =
+      buffer;
+
+
+    const filter =
+      audioContext.createBiquadFilter();
+
+
+    filter.type =
+      "lowpass";
+
+
+    filter.frequency.value =
+      filterFrequency;
+
+
+    const gain =
+      audioContext.createGain();
+
+
+    const now =
+      audioContext.currentTime;
+
+
+    gain.gain.setValueAtTime(
+      0.0001,
+      now
+    );
+
+
+    gain.gain.exponentialRampToValueAtTime(
+      volume,
+      now + 0.015
+    );
+
+
+    gain.gain.exponentialRampToValueAtTime(
+      0.0001,
+      now + duration
+    );
+
+
+    source
+      .connect(filter)
+      .connect(gain)
+      .connect(masterGain);
+
+
+    source.start(now);
+
+    source.stop(
+      now + duration + 0.03
+    );
+
+  }
+
+
+  /* ==========================================================================
+     CINEMATIC SOUND EFFECTS
+     ========================================================================== */
+
+
+  /* --------------------------------------------------------------------------
+     開始
+     -------------------------------------------------------------------------- */
+
+  function soundStart() {
+
+    tone(
+      55,
+           1.0,
+      {
+        type: "sine",
+        volume: 0.22,
+        attack: 0.05,
+        endFrequency: 42
+      }
+    );
+
+
+    tone(
+      110,
+      0.8,
+      {
+        type: "triangle",
+        volume: 0.08,
+        attack: 0.03,
+        endFrequency: 70
+      }
+    );
+
+
+    noise(
+      0.45,
+      0.035,
+      1200
+    );
+
+  }
+
+
+  /* --------------------------------------------------------------------------
+     Unityロゴ
+     -------------------------------------------------------------------------- */
+
+  function soundLogo() {
+
+    tone(
+      180,
+           1.4,
+      {
+        type: "sine",
+        volume: 0.13,
+        attack: 0.03,
+        endFrequency: 620
+      }
+    );
+
+
+    setTimeout(function () {
+
+      tone(
+        880,
+        0.8,
+        {
+          type: "sine",
+          volume: 0.12,
+          attack: 0.01,
+          endFrequency: 1320
+        }
+      );
+
+    }, 300);
+
+
+    setTimeout(function () {
+
+      tone(
+        1760,
+        0.45,
+        {
+          type: "sine",
+          volume: 0.075,
+          attack: 0.01,
+          endFrequency: 2100
+        }
+      );
+
+    }, 650);
+
+
+    noise(
+      1.0,
+      0.035,
+      3000
+    );
+
+  }
+
+
+  /* --------------------------------------------------------------------------
+     リング
+     -------------------------------------------------------------------------- */
+
+  function soundRings() {
+
+    tone(
+      80,
+      1.8,
+      {
+        type: "sine",
+        volume: 0.13,
+        attack: 0.05,
+        endFrequency: 180
+      }
+    );
+
+
+    const ringTimes = [
+      0,
+      350,
+      700,
+      1050
+    ];
+
+
+    ringTimes.forEach(function (delay, index) {
+
+      setTimeout(function () {
+
+        tone(
+          420 + index * 80,
+          0.75,
+          {
+            type: "sine",
+            volume: 0.07,
+            attack: 0.01,
+            endFrequency:
+              900 + index * 100
+          }
+        );
+
+      }, delay);
+
+    });
+
+
+    noise(
+      1.6,
+      0.025,
+      2200
+    );
+
+  }
+
+
+  /* --------------------------------------------------------------------------
+     煽り
+     -------------------------------------------------------------------------- */
+
+  function soundTease() {
+
+    const frequencies = [
+      440,
+      520,
+      620,
+      760
+    ];
+
+
+    frequencies.forEach(function (
+      frequency,
+      index
+    ) {
+
+      setTimeout(function () {
+
+        tone(
+          frequency,
+          0.25,
+          {
+            type: "square",
+            volume: 0.035,
+            attack: 0.005,
+            endFrequency:
+              frequency * 1.05
+          }
+        );
+
+      }, index * 650);
+
+    });
+
+  }
+
+
+  /* --------------------------------------------------------------------------
+     心拍
+     -------------------------------------------------------------------------- */
+
+  function soundHeartbeat() {
+
+    function beat(delay, strength) {
+
+      setTimeout(function () {
+
+        tone(
+          58,
+          0.32,
+          {
+            type: "sine",
+            volume: strength,
+            attack: 0.015,
+            endFrequency: 42
+          }
+        );
+
+
+        tone(
+          116,
+          0.22,
+          {
+            type: "sine",
+            volume: strength * 0.45,
+            attack: 0.01,
+            endFrequency: 75
+          }
+        );
+
+      }, delay);
+
+    }
+
+
+    beat(0, 0.17);
+
+    beat(360, 0.22);
+
+    beat(900, 0.18);
+
+    beat(1260, 0.25);
+
+  }
+
+
+  /* --------------------------------------------------------------------------
+     BOX
+     -------------------------------------------------------------------------- */
+
+  function soundBox() {
+
+    tone(
+      70,
+      2.2,
+      {
+        type: "sine",
+        volume: 0.16,
+        attack: 0.15,
+        endFrequency: 125
+      }
+    );
+
+
+    tone(
+      160,
+      1.8,
+      {
+        type: "triangle",
+        volume: 0.055,
+        attack: 0.1,
+        endFrequency: 380
+      }
+    );
+
+
+    setTimeout(function () {
+
+      tone(
+        520,
+        0.8,
+        {
+          type: "sine",
+          volume: 0.08,
+          attack: 0.02,
+          endFrequency: 720
+        }
+      );
+
+    }, 850);
+
+
+    noise(
+      1.5,
+      0.025,
+      1500
+    );
+
+  }
+
+
+  /* --------------------------------------------------------------------------
+     RARE警告
+     -------------------------------------------------------------------------- */
+
+  function soundRareWarning() {
+
+    tone(
+      130,
+      0.7,
+      {
+        type: "sawtooth",
+        volume: 0.06,
+        attack: 0.01,
+        endFrequency: 95
+      }
+    );
+
+
+    setTimeout(function () {
+
+      tone(
+        260,
+        0.18,
+        {
+          type: "square",
+          volume: 0.08,
+          attack: 0.005,
+          endFrequency: 220
+        }
+      );
+
+    }, 220);
+
+
+    setTimeout(function () {
+
+      tone(
+        320,
+        0.18,
+        {
+          type: "square",
+          volume: 0.08,
+          attack: 0.005,
+          endFrequency: 260
+        }
+      );
+
+    }, 440);
+
+  }
+
+
+  /* --------------------------------------------------------------------------
+     SECRET
+     -------------------------------------------------------------------------- */
+
+  function soundSecret() {
+
+    tone(
+      110,
+      1.7,
+      {
+        type: "sine",
+        volume: 0.13,
+        attack: 0.05,
+        endFrequency: 440
+      }
+    );
+
+
+    setTimeout(function () {
+
+      tone(
+        440,
+        1.4,
+        {
+          type: "triangle",
+          volume: 0.11,
+          attack: 0.03,
+          endFrequency: 880
+        }
+      );
+
+    }, 180);
+
+
+    setTimeout(function () {
+
+      tone(
+        880,
+        1.1,
+        {
+          type: "sine",
+          volume: 0.12,
+          attack: 0.02,
+          endFrequency: 1760
+        }
+      );
+
+    }, 420);
+
+
+    setTimeout(function () {
+
+      tone(
+        1760,
+        0.7,
+        {
+          type: "sine",
+          volume: 0.07,
+          attack: 0.01,
+          endFrequency: 2400
+        }
+      );
+
+    }, 720);
+
+
+    noise(
+      1.8,
+      0.045,
+      4200
+    );
+
+  }
+
+
+  /* --------------------------------------------------------------------------
+     最終爆発
+     -------------------------------------------------------------------------- */
+
+  function soundBurst(rarity) {
+
+    const isRare =
+      rarity === "rare";
+
+
+    const isSecret =
+      rarity === "secret";
+
+
+    /* 巨大な低音 */
+
+    tone(
+      isSecret ? 55 : 65,
+      isSecret ? 1.8 : 1.3,
+      {
+        type: "sine",
+        volume: isSecret ? 0.3 : 0.24,
+        attack: 0.01,
+        endFrequency:
+          isSecret ? 28 : 38
+      }
+    );
+
+
+    /* 爆発ノイズ */
+
+    noise(
+      isSecret ? 1.5 : 1.1,
+      isSecret ? 0.18 : 0.13,
+      isSecret ? 5000 : 3500
+    );
+
+
+    /* 高音 */
+
+    tone(
+      isSecret ? 1000 : 720,
+      0.9,
+      {
+        type: "sine",
+        volume: isSecret ? 0.14 : 0.09,
+        attack: 0.01,
+        endFrequency:
+          isSecret ? 2200 : 1500
+      }
+    );
+
+
+    /* RARE以上は追加 */
+
+    if (isRare || isSecret) {
+
+      setTimeout(function () {
+
+        tone(
+          1400,
+          0.7,
+          {
+            type: "triangle",
+            volume: 0.08,
+            attack: 0.01,
+            endFrequency: 2000
+          }
+        );
+
+      }, 180);
+
+    }
+
+
+    /* SECRETはさらにキラキラ */
+
+    if (isSecret) {
+
+      const sparkleTimes = [
+        0,
+        130,
+        260,
+        390,
+        520,
+        650
+      ];
+
+
+      sparkleTimes.forEach(function (
+        delay,
+        index
+      ) {
+
+        setTimeout(function () {
+
+          tone(
+            1200 + index * 180,
+            0.35,
+            {
+              type: "sine",
+              volume: 0.07,
+              attack: 0.005,
+              endFrequency:
+                1700 + index * 180
+            }
+          );
+
+        }, delay);
+
+      });
+
+    }
+
+  }
+
+
+  /* ==========================================================================
      日本時間
-     ------------------------------------------------------------------------ */
+     ========================================================================== */
 
   function getJstDateString() {
 
@@ -111,7 +956,6 @@ const DROP_ITEMS = [
         "en-CA",
         {
           timeZone: "Asia/Tokyo",
-
           year: "numeric",
           month: "2-digit",
           day: "2-digit"
@@ -128,8 +972,10 @@ const DROP_ITEMS = [
         (9 * 60 + now.getTimezoneOffset()) * 60000
       );
 
+
       const pad = (value) =>
         String(value).padStart(2, "0");
+
 
       return (
         jst.getFullYear()
@@ -148,17 +994,9 @@ const DROP_ITEMS = [
   }
 
 
-  /* ------------------------------------------------------------------------
-     今日のイベントキー
-
-     例：
-
-     unity-drop-2026-08-14
-
-     ↓翌日
-
-     unity-drop-2026-08-15
-     ------------------------------------------------------------------------ */
+  /* ==========================================================================
+     TODAY KEY
+     ========================================================================== */
 
   const todayKey =
     "unity-drop-" + getJstDateString();
@@ -172,20 +1010,16 @@ const DROP_ITEMS = [
     "unityDropResult_" + todayKey;
 
 
-  /* ------------------------------------------------------------------------
-     画面切り替え
-     ------------------------------------------------------------------------ */
+  /* ==========================================================================
+     SCREEN
+     ========================================================================== */
 
   const SCREEN_IDS = [
 
     "screen-intro",
-
     "screen-opening",
-
     "screen-result",
-
     "screen-already",
-
     "screen-fallback"
 
   ];
@@ -195,54 +1029,63 @@ const DROP_ITEMS = [
 
     SCREEN_IDS.forEach(function (screenId) {
 
-      const element = $(screenId);
+      const element =
+        $(screenId);
+
 
       if (element) {
 
-        element.classList.remove("is-active");
+        element.classList.remove(
+          "is-active"
+        );
 
       }
 
     });
 
 
-    const target = $(id);
+    const target =
+      $(id);
+
 
     if (target) {
 
-      target.classList.add("is-active");
+      target.classList.add(
+        "is-active"
+      );
 
     }
 
   }
 
 
-  /* ------------------------------------------------------------------------
-     待機
-
-     ※ prefers-reduced-motion でも短縮しません。
-     今回はガチャ演出そのものを楽しむ仕様。
-     ------------------------------------------------------------------------ */
+  /* ==========================================================================
+     WAIT
+     ========================================================================== */
 
   function wait(ms) {
 
     return new Promise(function (resolve) {
 
-      window.setTimeout(resolve, ms);
+      window.setTimeout(
+        resolve,
+        ms
+      );
 
     });
 
   }
 
 
-  /* ------------------------------------------------------------------------
-     テキスト
-     ------------------------------------------------------------------------ */
+  /* ==========================================================================
+     TEXT
+     ========================================================================== */
 
   function safeText(value) {
 
     return String(
-      value === null || value === undefined
+      value === null ||
+      value === undefined
         ? ""
         : value
     );
@@ -250,9 +1093,9 @@ const DROP_ITEMS = [
   }
 
 
-  /* ------------------------------------------------------------------------
-     重み抽選
-     ------------------------------------------------------------------------ */
+  /* ==========================================================================
+     RANDOM
+     ========================================================================== */
 
   function pickRandomItem() {
 
@@ -278,13 +1121,15 @@ const DROP_ITEMS = [
           Number(item.count) || 1
         );
 
+
       totalWeight += weight;
 
     });
 
 
     let random =
-      Math.random() * totalWeight;
+      Math.random() *
+      totalWeight;
 
 
     for (
@@ -293,7 +1138,9 @@ const DROP_ITEMS = [
       i++
     ) {
 
-      const item = DROP_ITEMS[i];
+      const item =
+        DROP_ITEMS[i];
+
 
       const weight =
         Math.max(
@@ -321,9 +1168,9 @@ const DROP_ITEMS = [
   }
 
 
-  /* ------------------------------------------------------------------------
-     レアリティ表示
-     ------------------------------------------------------------------------ */
+  /* ==========================================================================
+     RARITY
+     ========================================================================== */
 
   function rarityLabel(rarity) {
 
@@ -333,20 +1180,22 @@ const DROP_ITEMS = [
 
     }
 
+
     if (rarity === "rare") {
 
       return "RARE DROP";
 
     }
 
+
     return "";
 
   }
 
 
-  /* ------------------------------------------------------------------------
-     結果表示
-     ------------------------------------------------------------------------ */
+  /* ==========================================================================
+     RESULT
+     ========================================================================== */
 
   function renderResultInto(
     prefix,
@@ -363,8 +1212,10 @@ const DROP_ITEMS = [
     const title =
       $(prefix + "-title");
 
+
     const message =
       $(prefix + "-message");
+
 
     const rarity =
       $(prefix + "-rarity-label");
@@ -393,13 +1244,13 @@ const DROP_ITEMS = [
 
 
       if (
-        r === "rare"
-        ||
+        r === "rare" ||
         r === "secret"
       ) {
 
         rarity.textContent =
           rarityLabel(r);
+
 
         rarity.setAttribute(
           "data-rarity",
@@ -409,6 +1260,7 @@ const DROP_ITEMS = [
       } else {
 
         rarity.textContent = "";
+
 
         rarity.removeAttribute(
           "data-rarity"
@@ -422,7 +1274,7 @@ const DROP_ITEMS = [
 
 
   /* ==========================================================================
-     PARTICLES
+     GATHER PARTICLES
      ========================================================================== */
 
   function spawnGatherParticles() {
@@ -451,7 +1303,9 @@ const DROP_ITEMS = [
     ) {
 
       const particle =
-        document.createElement("span");
+        document.createElement(
+          "span"
+        );
 
 
       particle.className =
@@ -459,24 +1313,33 @@ const DROP_ITEMS = [
 
 
       const angle =
-        Math.random() * Math.PI * 2;
+        Math.random() *
+        Math.PI *
+        2;
 
 
       const distance =
-        100 + Math.random() * 170;
+        100 +
+        Math.random() *
+        170;
 
 
       const x =
-        Math.cos(angle) * distance;
+        Math.cos(angle) *
+        distance;
 
 
       const y =
-        Math.sin(angle) * distance;
+        Math.sin(angle) *
+        distance;
 
 
-      particle.style.left = "50%";
+      particle.style.left =
+        "50%";
 
-      particle.style.top = "50%";
+
+      particle.style.top =
+        "50%";
 
 
       particle.style.setProperty(
@@ -492,7 +1355,9 @@ const DROP_ITEMS = [
 
 
       particle.style.animationDelay =
-        Math.random() * .5 + "s";
+        Math.random() *
+        .5 +
+        "s";
 
 
       field.appendChild(
@@ -556,7 +1421,9 @@ const DROP_ITEMS = [
     ) {
 
       const particle =
-        document.createElement("span");
+        document.createElement(
+          "span"
+        );
 
 
       particle.className =
@@ -564,21 +1431,25 @@ const DROP_ITEMS = [
 
 
       const angle =
-        Math.random() * Math.PI * 2;
+        Math.random() *
+        Math.PI *
+        2;
 
 
       const length =
-        50
-        +
-        Math.random() * distance;
+        50 +
+        Math.random() *
+        distance;
 
 
       const x =
-        Math.cos(angle) * length;
+        Math.cos(angle) *
+        length;
 
 
       const y =
-        Math.sin(angle) * length;
+        Math.sin(angle) *
+        length;
 
 
       particle.style.setProperty(
@@ -594,7 +1465,9 @@ const DROP_ITEMS = [
 
 
       particle.style.animationDelay =
-        Math.random() * .18 + "s";
+        Math.random() *
+        .18 +
+        "s";
 
 
       field.appendChild(
@@ -602,13 +1475,15 @@ const DROP_ITEMS = [
       );
 
 
-      requestAnimationFrame(function () {
+      requestAnimationFrame(
+        function () {
 
-        particle.classList.add(
-          "is-firing"
-        );
+          particle.classList.add(
+            "is-firing"
+          );
 
-      });
+        }
+      );
 
     }
 
@@ -616,27 +1491,19 @@ const DROP_ITEMS = [
 
 
   /* ==========================================================================
-     PHASE CONTROL
+     PHASE
      ========================================================================== */
 
   const PHASE_IDS = [
 
     "phase-blackout",
-
     "phase-logo",
-
     "phase-rings",
-
     "phase-tease",
-
     "phase-heartbeat",
-
     "phase-box",
-
     "phase-blackout-extra",
-
     "phase-special",
-
     "phase-burst"
 
   ];
@@ -644,21 +1511,23 @@ const DROP_ITEMS = [
 
   function setPhase(id) {
 
-    PHASE_IDS.forEach(function (phaseId) {
+    PHASE_IDS.forEach(
+      function (phaseId) {
 
-      const element =
-        $(phaseId);
+        const element =
+          $(phaseId);
 
 
-      if (element) {
+        if (element) {
 
-        element.classList.remove(
-          "is-active"
-        );
+          element.classList.remove(
+            "is-active"
+          );
+
+        }
 
       }
-
-    });
+    );
 
 
     const target =
@@ -677,7 +1546,7 @@ const DROP_ITEMS = [
 
 
   /* ==========================================================================
-     TEASE TEXT
+     TEASE
      ========================================================================== */
 
   async function playTeaseText() {
@@ -698,11 +1567,8 @@ const DROP_ITEMS = [
     const lines = [
 
       "UNITY DROP",
-
       "LOADING...",
-
       "YOUR DROP IS COMING...",
-
       "ALMOST THERE..."
 
     ];
@@ -768,6 +1634,7 @@ const DROP_ITEMS = [
         "is-flashing--strong"
       );
 
+
       void flash.offsetWidth;
 
     }
@@ -778,6 +1645,7 @@ const DROP_ITEMS = [
       rarityElement.classList.remove(
         "is-shown"
       );
+
 
       rarityElement.textContent =
         rarityLabel(rarity);
@@ -792,11 +1660,17 @@ const DROP_ITEMS = [
     }
 
 
-    /* SECRETなら強いフラッシュ */
+    /* 音 */
+
+    soundBurst(
+      rarity
+    );
+
+
+    /* フラッシュ */
 
     if (
-      flash
-      &&
+      flash &&
       rarity === "secret"
     ) {
 
@@ -813,12 +1687,8 @@ const DROP_ITEMS = [
     }
 
 
-    /* 少し溜める */
-
     await wait(500);
 
-
-    /* レアリティ表示 */
 
     if (rarityElement) {
 
@@ -829,22 +1699,22 @@ const DROP_ITEMS = [
     }
 
 
-    /* 粒子 */
-
     spawnBurstParticles(
       rarity
     );
 
 
-    /* リング */
-
     if (rings) {
 
       const ring =
-        document.createElement("div");
+        document.createElement(
+          "div"
+        );
+
 
       ring.className =
         "burst-rings";
+
 
       rings.appendChild(
         ring
@@ -871,7 +1741,7 @@ const DROP_ITEMS = [
 
 
   /* ==========================================================================
-     CINEMATIC MAIN
+     CINEMATIC
      ========================================================================== */
 
   async function playCinematic(
@@ -888,80 +1758,104 @@ const DROP_ITEMS = [
 
 
     /* --------------------------------------------------------------
-       0. 暗転
+       0. BLACKOUT
        -------------------------------------------------------------- */
 
     setPhase(
       "phase-blackout"
     );
 
+
+    soundStart();
+
+
     await wait(1000);
 
 
     /* --------------------------------------------------------------
-       1. Unityロゴ
+       1. LOGO
        -------------------------------------------------------------- */
 
     setPhase(
       "phase-logo"
     );
 
+
+    soundLogo();
+
+
     await wait(1700);
 
 
     /* --------------------------------------------------------------
-       2. リング・粒子
+       2. RINGS
        -------------------------------------------------------------- */
 
     setPhase(
       "phase-rings"
     );
 
+
     spawnGatherParticles();
+
+
+    soundRings();
+
 
     await wait(1900);
 
 
     /* --------------------------------------------------------------
-       3. 煽り
+       3. TEASE
        -------------------------------------------------------------- */
 
     setPhase(
       "phase-tease"
     );
 
+
+    soundTease();
+
+
     await playTeaseText();
 
 
     /* --------------------------------------------------------------
-       4. 心拍
+       4. HEARTBEAT
        -------------------------------------------------------------- */
 
     setPhase(
       "phase-heartbeat"
     );
 
+
+    soundHeartbeat();
+
+
     await wait(1900);
 
 
     /* --------------------------------------------------------------
-       5. DROP BOX
+       5. BOX
        -------------------------------------------------------------- */
 
     setPhase(
       "phase-box"
     );
 
+
+    soundBox();
+
+
     await wait(2200);
 
 
     /* --------------------------------------------------------------
-       RARE追加溜め
+       RARE
        -------------------------------------------------------------- */
 
     if (
-      rarity === "rare"
-      ||
+      rarity === "rare" ||
       rarity === "secret"
     ) {
 
@@ -969,13 +1863,17 @@ const DROP_ITEMS = [
         "phase-blackout-extra"
       );
 
+
+      soundRareWarning();
+
+
       await wait(1100);
 
     }
 
 
     /* --------------------------------------------------------------
-       SECRET追加演出
+       SECRET
        -------------------------------------------------------------- */
 
     if (
@@ -986,13 +1884,17 @@ const DROP_ITEMS = [
         "phase-special"
       );
 
+
+      soundSecret();
+
+
       await wait(1600);
 
     }
 
 
     /* --------------------------------------------------------------
-       最終爆発
+       BURST
        -------------------------------------------------------------- */
 
     await playBurst(
@@ -1001,11 +1903,7 @@ const DROP_ITEMS = [
 
 
     /* --------------------------------------------------------------
-       結果画面
-
-       ★ここが重要
-
-       演出終了後に必ずその場で結果を表示
+       RESULT
        -------------------------------------------------------------- */
 
     renderResultInto(
@@ -1025,14 +1923,13 @@ const DROP_ITEMS = [
 
 
   /* ==========================================================================
-     DROP OPEN
+     OPEN DROP
      ========================================================================== */
 
   async function openDrop() {
 
     if (
-      !Array.isArray(DROP_ITEMS)
-      ||
+      !Array.isArray(DROP_ITEMS) ||
       DROP_ITEMS.length === 0
     ) {
 
@@ -1040,9 +1937,19 @@ const DROP_ITEMS = [
         "現在DROPの内容が準備されていません。"
       );
 
+
       return;
 
     }
+
+
+    /*
+     * iPhoneではユーザー操作内で
+     * AudioContextを開始する必要があるため、
+     * DROPボタンを押した瞬間に起動
+     */
+
+    initAudio();
 
 
     const item =
@@ -1055,15 +1962,14 @@ const DROP_ITEMS = [
         "DROPの抽選に失敗しました。"
       );
 
+
       return;
 
     }
 
 
     /* --------------------------------------------------------------
-       先に結果を保存
-
-       演出中にページが閉じても結果が残る
+       保存
        -------------------------------------------------------------- */
 
     try {
@@ -1090,7 +1996,7 @@ const DROP_ITEMS = [
 
 
     /* --------------------------------------------------------------
-       演出開始
+       演出
        -------------------------------------------------------------- */
 
     try {
@@ -1106,11 +2012,6 @@ const DROP_ITEMS = [
         error
       );
 
-
-      /*
-       * 演出でエラーが発生しても
-       * 結果画面には必ず到達させる
-       */
 
       renderResultInto(
         "result",
@@ -1251,8 +2152,7 @@ const DROP_ITEMS = [
     if (alreadyOpened) {
 
       if (
-        previousResult
-        &&
+        previousResult &&
         previousResult.title
       ) {
 
@@ -1309,7 +2209,8 @@ const DROP_ITEMS = [
 
       console.error(
         "UNITY DROP global error:",
-        event.error || event.message
+        event.error ||
+        event.message
       );
 
     }
