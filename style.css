@@ -1,421 +1,2028 @@
 /* ==========================================================================
-   UNITY DROP（シンプル版）— カフェブランドの延長線上にある「特別感」
+   UNITY DROP
+   Cinematic Gacha Edition
    ========================================================================== */
 
 :root {
-  --cream:        #FBF7F1;
-  --ivory:        #F4EDE1;
-  --beige:        #E9DCC7;
-  --beige-deep:   #DCCAAC;
-  --brown-deep:   #3E2E22;
-  --brown-mid:    #7C6350;
-  --brown-soft:   #A6907A;
-  --sage:         #92A87E;
-  --sage-deep:    #71875C;
-  --gold:         #E8CE8E;
-  --gold-deep:    #C9A85C;
-  --gold-bright:  #FFE9B8;
-  --rare-glow:    #D9B65C;
-  --secret-glow:  #F4D77A;
-  --white:        #FFFFFF;
-  --line:         rgba(62, 46, 34, 0.10);
-  --shadow-soft:  0 16px 40px rgba(80, 60, 40, 0.12);
 
-  --ink:          #120D08;
-  --ink-2:        #1E150D;
+  --cream: #FBF7F1;
+  --white: #FFFFFF;
+
+  --brown-deep: #3E2E22;
+  --brown-mid: #7C6350;
+  --brown-soft: #A6907A;
+
+  --gold: #E8CE8E;
+  --gold-deep: #C9A85C;
+  --gold-bright: #FFF2C7;
+
+  --rare: #E7C86B;
+  --secret: #FFEAA0;
+
+  --ink: #080604;
+  --ink-2: #120D08;
+
+  --line: rgba(62,46,34,.1);
 
   --font-display: 'Shippori Mincho', serif;
-  --font-body: 'Zen Kaku Gothic New', -apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif;
+  --font-body: 'Zen Kaku Gothic New',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Hiragino Sans',
+    sans-serif;
 
-  --radius-lg: 28px;
-  --radius-md: 16px;
-  --max-w: 420px;
+  --max-width: 430px;
 }
 
-* { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; height: 100%; }
+
+/* ==========================================================================
+   RESET
+   ========================================================================== */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
 body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100%;
+}
+
+body {
+
   font-family: var(--font-body);
+
   background: var(--cream);
+
   color: var(--brown-deep);
+
   -webkit-font-smoothing: antialiased;
+
   overflow-x: hidden;
+
   min-height: 100vh;
   min-height: 100dvh;
 }
-button { font-family: inherit; }
+
+button {
+  font-family: inherit;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+/* ==========================================================================
+   BACKGROUND
+   ========================================================================== */
 
 .bg-texture {
+
   position: fixed;
+
   inset: 0;
+
   z-index: 0;
+
   pointer-events: none;
+
   background:
-    radial-gradient(ellipse 600px 460px at 10% -6%, rgba(233, 220, 199, 0.7), transparent 60%),
-    radial-gradient(ellipse 520px 520px at 105% 100%, rgba(232, 206, 142, 0.18), transparent 60%),
+
+    radial-gradient(
+      ellipse 600px 460px at 5% -5%,
+      rgba(233,220,199,.75),
+      transparent 65%
+    ),
+
+    radial-gradient(
+      ellipse 520px 520px at 110% 100%,
+      rgba(232,206,142,.2),
+      transparent 65%
+    ),
+
     var(--cream);
 }
 
-.app { position: relative; z-index: 1; min-height: 100vh; min-height: 100dvh; }
 
-/* ==========================================================================
-   Screens
-   ========================================================================== */
-.screen {
-  display: none;
+.app {
+
+  position: relative;
+
+  z-index: 1;
+
   min-height: 100vh;
   min-height: 100dvh;
-  align-items: center;
-  justify-content: center;
-  padding: 28px 22px;
-}
-.screen.is-active { display: flex; animation: screenIn .5s ease both; }
-@keyframes screenIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
 }
 
-.card {
+
+/* ==========================================================================
+   SCREENS
+   ========================================================================== */
+
+.screen {
+
+  display: none;
+
   width: 100%;
-  max-width: var(--max-w);
-  background: var(--white);
+
+  min-height: 100vh;
+  min-height: 100dvh;
+
+  align-items: center;
+  justify-content: center;
+
+  padding: 28px 20px;
+}
+
+.screen.is-active {
+
+  display: flex;
+
+  animation: screenIn .5s ease both;
+}
+
+@keyframes screenIn {
+
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+/* ==========================================================================
+   CARD
+   ========================================================================== */
+
+.card {
+
+  position: relative;
+
+  width: 100%;
+
+  max-width: var(--max-width);
+
+  padding: 42px 30px 38px;
+
+  background: rgba(255,255,255,.96);
+
   border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-soft);
-  padding: 40px 30px 40px;
+
+  border-radius: 28px;
+
+  box-shadow:
+    0 20px 60px rgba(80,60,40,.13);
+
+  text-align: center;
+
+  overflow: hidden;
+}
+
+
+/* ==========================================================================
+   LOGO
+   ========================================================================== */
+
+.brand-logo-wrap {
+
+  display: flex;
+
+  justify-content: center;
+  align-items: center;
+
+  min-height: 76px;
+
+  margin-bottom: 14px;
+}
+
+.brand-logo {
+
+  display: block;
+
+  width: 76px;
+
+  height: 76px;
+
+  object-fit: contain;
+
+  border-radius: 14px;
+}
+
+.brand-logo-fallback {
+
+  display: none;
+
+  width: 76px;
+  height: 76px;
+
+  align-items: center;
+  justify-content: center;
+
+  font-family: var(--font-display);
+
+  font-size: 26px;
+
+  font-weight: 800;
+
+  color: var(--brown-deep);
+
+  border: 1px solid rgba(62,46,34,.12);
+
+  border-radius: 18px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #fff,
+      #eee5d8
+    );
+}
+
+.brand-logo--small {
+
+  width: 42px;
+  height: 42px;
+
+  border-radius: 9px;
+}
+
+.brand-logo-fallback--small {
+
+  width: 42px;
+  height: 42px;
+
+  font-size: 15px;
+
+  border-radius: 9px;
+}
+
+
+/* ==========================================================================
+   INTRO
+   ========================================================================== */
+
+.small-label {
+
+  margin: 0 0 9px;
+
+  font-size: 10px;
+
+  font-weight: 700;
+
+  letter-spacing: .25em;
+
+  color: var(--brown-soft);
+}
+
+.drop-title {
+
+  margin: 0 0 14px;
+
+  font-family: var(--font-display);
+
+  font-size: 28px;
+
+  font-weight: 800;
+
+  letter-spacing: .1em;
+
+  color: var(--brown-deep);
+}
+
+.drop-message {
+
+  margin: 0 0 34px;
+
+  font-size: 15px;
+
+  line-height: 1.9;
+
+  color: var(--brown-mid);
+}
+
+
+/* ==========================================================================
+   OPEN BUTTON
+   ========================================================================== */
+
+.btn-open {
+
+  position: relative;
+
+  width: 100%;
+
+  padding: 18px 22px;
+
+  border: 0;
+
+  border-radius: 999px;
+
+  cursor: pointer;
+
+  overflow: hidden;
+
+  color: #2E2416;
+
+  font-size: 15px;
+
+  font-weight: 700;
+
+  letter-spacing: .06em;
+
+  background:
+    linear-gradient(
+      135deg,
+      var(--gold-deep),
+      var(--gold)
+    );
+
+  box-shadow:
+    0 12px 30px rgba(201,168,92,.35);
+
+  transition:
+    transform .15s ease,
+    box-shadow .2s ease;
+
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-open:active {
+
+  transform: scale(.97);
+
+  box-shadow:
+    0 7px 20px rgba(201,168,92,.3);
+}
+
+.btn-open:disabled {
+
+  opacity: .8;
+
+  cursor: default;
+}
+
+.btn-text {
+
+  position: relative;
+
+  z-index: 2;
+}
+
+.btn-shine {
+
+  position: absolute;
+
+  top: 0;
+  bottom: 0;
+
+  left: -80px;
+
+  width: 60px;
+
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(255,255,255,.65),
+      transparent
+    );
+
+  transform: skewX(-20deg);
+
+  animation: buttonShine 3s infinite;
+}
+
+@keyframes buttonShine {
+
+  0% {
+    left: -80px;
+  }
+
+  35%,
+  100% {
+    left: 120%;
+  }
+}
+
+.intro-note {
+
+  margin: 18px 0 0;
+
+  font-size: 11.5px;
+
+  color: var(--brown-soft);
+}
+
+
+/* ==========================================================================
+   CINEMATIC
+   ========================================================================== */
+
+.screen-opening {
+
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 100;
+
+  padding: 0;
+
+  background: #000;
+}
+
+.screen-opening.is-active {
+
+  display: block;
+}
+
+.cinematic {
+
+  position: fixed;
+
+  inset: 0;
+
+  overflow: hidden;
+
+  background: #000;
+}
+
+.cine-background {
+
+  position: absolute;
+
+  inset: 0;
+
+  background:
+
+    radial-gradient(
+      circle at 50% 48%,
+      rgba(232,206,142,.1),
+      transparent 35%
+    ),
+
+    radial-gradient(
+      circle at 50% 50%,
+      #191109,
+      #050403 65%,
+      #000 100%
+    );
+}
+
+
+/* ==========================================================================
+   PHASE SYSTEM
+   ========================================================================== */
+
+.cine-phase {
+
+  position: absolute;
+
+  inset: 0;
+
+  display: none;
+
+  align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
+
+  z-index: 10;
+}
+
+.cine-phase.is-active {
+
+  display: flex;
+
+  animation: phaseFadeIn .35s ease both;
+}
+
+@keyframes phaseFadeIn {
+
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+
+/* ==========================================================================
+   PHASE 0 — BLACKOUT
+   ========================================================================== */
+
+#phase-blackout {
+
+  background: #000;
+
+  z-index: 50;
+}
+
+.blackout-vignette {
+
+  position: absolute;
+
+  inset: 0;
+
+  background:
+    radial-gradient(
+      circle,
+      transparent 0%,
+      rgba(0,0,0,.35) 40%,
+      #000 100%
+    );
+
+  animation: blackoutPulse 1.2s ease both;
+}
+
+@keyframes blackoutPulse {
+
+  0% {
+    opacity: 1;
+  }
+
+  60% {
+    opacity: .75;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+
+/* ==========================================================================
+   PHASE 1 — LOGO
+   ========================================================================== */
+
+#phase-logo {
+
+  background:
+    radial-gradient(
+      circle,
+      rgba(232,206,142,.12),
+      #070503 60%
+    );
+
+  z-index: 40;
+}
+
+.logo-stage {
+
+  position: relative;
+
+  width: 220px;
+  height: 220px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+}
+
+.cine-logo {
+
+  position: relative;
+
+  z-index: 5;
+
+  width: 82px;
+  height: 82px;
+
+  object-fit: contain;
+
+  border-radius: 16px;
+
+  opacity: 0;
+
+  animation:
+    cinematicLogoIn 1.5s
+    cubic-bezier(.2,.8,.2,1)
+    forwards;
+}
+
+.cine-logo-fallback {
+
+  display: none;
+
+  position: relative;
+
+  z-index: 5;
+
+  width: 82px;
+  height: 82px;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 16px;
+
+  font-family: var(--font-display);
+
+  font-size: 27px;
+
+  font-weight: 800;
+
+  color: #fff;
+
+  background:
+    linear-gradient(
+      145deg,
+      #3c3022,
+      #100c08
+    );
+
+  box-shadow:
+    0 0 60px rgba(232,206,142,.5);
+}
+
+.logo-glow {
+
+  position: absolute;
+
+  width: 130px;
+  height: 130px;
+
+  border-radius: 50%;
+
+  background:
+    radial-gradient(
+      circle,
+      rgba(255,234,176,.7),
+      rgba(232,206,142,.25) 35%,
+      transparent 70%
+    );
+
+  filter: blur(8px);
+
+  animation: logoGlow 1.5s ease both;
+}
+
+@keyframes cinematicLogoIn {
+
+  0% {
+    opacity: 0;
+    transform:
+      scale(.45)
+      rotate(-15deg);
+    filter:
+      brightness(.5)
+      drop-shadow(0 0 0 transparent);
+  }
+
+  45% {
+    opacity: 1;
+    transform:
+      scale(1.18)
+      rotate(5deg);
+    filter:
+      brightness(1.4)
+      drop-shadow(0 0 25px rgba(232,206,142,.8));
+  }
+
+  75% {
+    transform:
+      scale(.96)
+      rotate(-2deg);
+  }
+
+  100% {
+    opacity: 1;
+    transform:
+      scale(1)
+      rotate(0);
+    filter:
+      brightness(1)
+      drop-shadow(0 0 35px rgba(232,206,142,.65));
+  }
+}
+
+@keyframes logoGlow {
+
+  0% {
+    transform: scale(.3);
+    opacity: 0;
+  }
+
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: .8;
+  }
+}
+
+.logo-orbit {
+
+  position: absolute;
+
+  width: 150px;
+  height: 150px;
+
+  border-radius: 50%;
+
+  border: 1px solid rgba(232,206,142,.3);
+
+  opacity: 0;
+
+  animation:
+    orbitAppear 1.4s ease forwards;
+}
+
+.orbit-1 {
+  transform: rotate(25deg);
+}
+
+.orbit-2 {
+  width: 190px;
+  height: 190px;
+
+  transform: rotate(-35deg);
+}
+
+.orbit-3 {
+  width: 220px;
+  height: 220px;
+
+  border-color: rgba(232,206,142,.12);
+
+  transform: rotate(70deg);
+}
+
+@keyframes orbitAppear {
+
+  0% {
+    opacity: 0;
+    transform: scale(.5) rotate(0);
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: .4;
+    transform: scale(1) rotate(180deg);
+  }
+}
+
+
+/* ==========================================================================
+   PHASE 2 — RINGS
+   ========================================================================== */
+
+#phase-rings {
+
+  background:
+    radial-gradient(
+      circle at center,
+      rgba(232,206,142,.16),
+      transparent 45%
+    );
+
+  z-index: 35;
+}
+
+.rings-center {
+
+  position: relative;
+
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+}
+
+.energy-core {
+
+  width: 24px;
+  height: 24px;
+
+  border-radius: 50%;
+
+  background:
+    radial-gradient(
+      circle,
+      #fff8dd,
+      var(--gold),
+      transparent 75%
+    );
+
+  box-shadow:
+    0 0 30px 8px rgba(232,206,142,.6);
+
+  animation:
+    corePulse 1.2s ease-in-out infinite;
+}
+
+@keyframes corePulse {
+
+  0%,
+  100% {
+    transform: scale(.7);
+    opacity: .7;
+  }
+
+  50% {
+    transform: scale(1.45);
+    opacity: 1;
+  }
+}
+
+.energy-ring {
+
+  position: absolute;
+
+  width: 70px;
+  height: 70px;
+
+  border-radius: 50%;
+
+  border:
+    1px solid rgba(232,206,142,.55);
+
+  animation:
+    energyRing 2s cubic-bezier(.15,.6,.3,1) infinite;
+}
+
+.ring-1 {
+  animation-delay: 0s;
+}
+
+.ring-2 {
+  animation-delay: .35s;
+}
+
+.ring-3 {
+  animation-delay: .7s;
+}
+
+.ring-4 {
+  animation-delay: 1.05s;
+}
+
+@keyframes energyRing {
+
+  0% {
+    transform: scale(.4);
+    opacity: 0;
+  }
+
+  20% {
+    opacity: .9;
+  }
+
+  100% {
+    transform: scale(6);
+    opacity: 0;
+  }
+}
+
+.gather-field {
+
+  position: absolute;
+
+  inset: 0;
+
+  pointer-events: none;
+}
+
+.gather-particle {
+
+  position: absolute;
+
+  top: 50%;
+  left: 50%;
+
+  width: 4px;
+  height: 4px;
+
+  border-radius: 50%;
+
+  background: var(--gold-bright);
+
+  box-shadow:
+    0 0 10px var(--gold);
+
+  opacity: 0;
+
+  animation:
+    particleGather 1.4s
+    cubic-bezier(.15,.7,.2,1)
+    forwards;
+}
+
+@keyframes particleGather {
+
+  0% {
+
+    opacity: 0;
+
+    transform:
+      translate(-50%,-50%)
+      translate(var(--gx),var(--gy))
+      scale(1.5);
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  100% {
+
+    opacity: 0;
+
+    transform:
+      translate(-50%,-50%)
+      translate(0,0)
+      scale(.2);
+  }
+}
+
+
+/* ==========================================================================
+   PHASE 3 — TEASE
+   ========================================================================== */
+
+#phase-tease {
+
+  background:
+    radial-gradient(
+      circle,
+      #1a120a,
+      #000 65%
+    );
+
+  z-index: 30;
+}
+
+.tease-container {
+
+  width: 100%;
+
   text-align: center;
 }
 
-/* -- Unityロゴ（公式マーク） -- */
-.brand-logo {
-  display: block;
-  width: 96px;
-  height: auto;
-  margin: 0 auto 18px;
-  border-radius: 14px;
-}
-.brand-logo--sm { width: 40px; margin: 0; }
+.tease-line {
 
-/* ==========================================================================
-   ① オープニング
-   ========================================================================== */
-.drop-title {
   font-family: var(--font-display);
-  font-size: 26px;
-  letter-spacing: 0.1em;
-  color: var(--brown-deep);
-  margin: 0 0 14px;
-}
-.drop-message {
-  font-size: 15px;
-  line-height: 1.9;
-  color: var(--brown-mid);
-  margin: 0 0 34px;
-}
-.btn-open {
-  appearance: none;
-  border: none;
-  cursor: pointer;
-  width: 100%;
-  padding: 17px 22px;
-  border-radius: 999px;
-  font-weight: 700;
-  font-size: 15px;
-  letter-spacing: 0.04em;
-  color: #2E2416;
-  background: linear-gradient(135deg, var(--gold-deep), var(--gold));
-  box-shadow: 0 12px 26px rgba(201, 168, 92, 0.32);
-  transition: transform .15s ease;
-  -webkit-tap-highlight-color: transparent;
-}
-.btn-open:active { transform: scale(0.97); }
-.intro-note {
-  margin: 18px 0 0;
-  font-size: 11.5px;
-  color: var(--brown-soft);
-  letter-spacing: 0.03em;
+
+  font-size: 19px;
+
+  letter-spacing: .28em;
+
+  color: var(--gold-bright);
+
+  text-shadow:
+    0 0 25px rgba(232,206,142,.65);
+
+  animation:
+    teaseText .8s ease both;
 }
 
-/* ==========================================================================
-   ② 開封演出（ガチャシーケンス）
-   ========================================================================== */
-.screen-opening { padding: 0; }
-.screen-opening.is-active { display: block; }
+.tease-sub {
 
-.cine-layer {
-  position: fixed;
-  inset: 0;
-  z-index: 2;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  background: var(--ink);
+  margin-top: 17px;
+
+  font-size: 10px;
+
+  letter-spacing: .35em;
+
+  color: rgba(255,255,255,.48);
+}
+
+.tease-progress {
+
+  position: relative;
+
+  width: 150px;
+  height: 1px;
+
+  margin: 25px auto 0;
+
+  background: rgba(255,255,255,.1);
+
   overflow: hidden;
 }
-.cine-layer.is-active { display: flex; }
 
-/* -- Phase 0: 暗転 -- */
-.cine-blackout { background: #000; }
+.tease-progress span {
 
-/* -- Phase 1: ロゴ出現・回転・発光 -- */
-.cine-logo-img {
-  width: 84px;
-  height: 84px;
-  border-radius: 16px;
-  opacity: 0;
-  filter: drop-shadow(0 0 0 rgba(232,206,142,0));
-  animation: logoAppear 1s ease both;
-}
-@keyframes logoAppear {
-  0% { opacity: 0; transform: scale(0.7) rotate(-8deg); filter: drop-shadow(0 0 0 rgba(232,206,142,0)); }
-  55% { opacity: 1; transform: scale(1.05) rotate(3deg); filter: drop-shadow(0 0 18px rgba(232,206,142,0.55)); }
-  100% { opacity: 1; transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 26px rgba(232,206,142,0.65)); }
-}
+  display: block;
 
-/* -- Phase 2: 光のリング拡散＋粒子収束 -- */
-.cine-rings { background: var(--ink-2); }
-.ring {
-  position: absolute;
-  border-radius: 50%;
-  border: 1px solid rgba(232,206,142,0.45);
-  animation: ringExpand 1.6s ease-out forwards;
-}
-.ring--1 { width: 60px; height: 60px; animation-delay: 0s; }
-.ring--2 { width: 60px; height: 60px; animation-delay: .25s; }
-.ring--3 { width: 60px; height: 60px; animation-delay: .5s; }
-@keyframes ringExpand {
-  0% { transform: scale(1); opacity: 0; }
-  25% { opacity: .9; }
-  100% { transform: scale(6); opacity: 0; }
-}
-.gather-field { position: absolute; inset: 0; pointer-events: none; }
-.gather-particle {
-  position: absolute;
-  top: 50%; left: 50%;
-  width: 4px; height: 4px;
-  border-radius: 50%;
+  width: 45%;
+
+  height: 100%;
+
   background: var(--gold);
-  opacity: 0;
-}
-.gather-particle.is-gathering {
-  animation: gatherIn .8s ease-in forwards;
-}
-@keyframes gatherIn {
-  0% { opacity: 0; transform: translate(-50%,-50%) translate(var(--gx), var(--gy)) scale(1); }
-  60% { opacity: 1; }
-  100% { opacity: 0; transform: translate(-50%,-50%) translate(0,0) scale(0.3); }
+
+  animation:
+    progressMove 1.3s linear infinite;
 }
 
-/* -- Phase 3: 煽りテキスト -- */
-.cine-tease { background: #000; }
-.tease-text {
-  font-family: var(--font-display);
-  font-size: 15px;
-  letter-spacing: 0.3em;
-  color: var(--gold);
-  margin: 0;
-  opacity: 0;
-  animation: teaseFade .5s ease both;
-}
-@keyframes teaseFade {
-  0% { opacity: 0; transform: translateY(6px); }
-  15%, 85% { opacity: 1; transform: translateY(0); }
-  100% { opacity: 0; transform: translateY(-6px); }
+@keyframes teaseText {
+
+  0% {
+    opacity: 0;
+    transform: scale(.85);
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  80% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.08);
+  }
 }
 
-/* -- Phase 4: 暗転＋鼓動 -- */
-.cine-heartbeat { background: #000; }
-.heartbeat-core {
-  width: 30px; height: 30px;
-  border-radius: 50%;
-  background: radial-gradient(circle, var(--gold-bright), var(--gold-deep) 70%, transparent 100%);
-  animation: heartbeatPulse 0.8s ease-in-out infinite;
-}
-@keyframes heartbeatPulse {
-  0%, 100% { transform: scale(1); box-shadow: 0 0 20px 4px rgba(232,206,142,0.4); }
-  25% { transform: scale(1.35); box-shadow: 0 0 34px 10px rgba(232,206,142,0.6); }
-  40% { transform: scale(1); box-shadow: 0 0 20px 4px rgba(232,206,142,0.4); }
-  55% { transform: scale(1.2); box-shadow: 0 0 28px 8px rgba(232,206,142,0.5); }
+@keyframes progressMove {
+
+  from {
+    transform: translateX(-150px);
+  }
+
+  to {
+    transform: translateX(330px);
+  }
 }
 
-/* -- Phase 5: DROPボックス出現 -- */
-.cine-box { background: radial-gradient(circle at 50% 45%, rgba(232,206,142,0.12), var(--ink) 70%); }
-.drop-box {
-  width: 116px; height: 116px;
-  border-radius: 22px;
-  background: linear-gradient(155deg, #2A2015, #1A130C);
-  border: 1px solid rgba(232,206,142,0.4);
-  box-shadow: 0 0 40px 6px rgba(232,206,142,0.2), inset 0 0 20px rgba(0,0,0,0.4);
-  display: flex; align-items: center; justify-content: center;
-  opacity: 0;
-  transform: scale(0.8) translateY(10px);
-  animation: boxAppear .9s cubic-bezier(.2,.8,.3,1.2) forwards, boxFloat 1.8s ease-in-out infinite 0.9s;
-}
-@keyframes boxAppear {
-  to { opacity: 1; transform: scale(1) translateY(0); }
-}
-@keyframes boxFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
-}
-.drop-box-seal {
-  width: 38px; height: 38px;
-  border-radius: 50%;
-  border: 1.5px solid var(--gold);
-  position: relative;
-}
-.drop-box-seal::before {
-  content: "";
-  position: absolute; inset: 7px;
-  border-radius: 50%;
-  background: var(--gold);
-  opacity: .55;
-}
-
-/* -- 追加の溜め（RARE / SECRET RARE） -- */
-.cine-blackout--extra { background: #000; }
-.cine-special { background: #000; }
-.special-glow {
-  width: 200px; height: 200px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(244,215,122,0.55), transparent 70%);
-  filter: blur(4px);
-  animation: specialPulse 0.7s ease-in-out infinite;
-}
-@keyframes specialPulse {
-  0%, 100% { transform: scale(0.85); opacity: .6; }
-  50% { transform: scale(1.15); opacity: 1; }
-}
-
-/* -- Phase 6: 最終判定・爆発 -- */
-.cine-burst { background: #000; }
-.burst-flash {
-  position: absolute;
-  inset: 0;
-  background: #fff;
-  opacity: 0;
-}
-.burst-flash.is-flashing { animation: flashPop .5s ease both; }
-.burst-flash.is-flashing--strong { animation: flashPopStrong .7s ease both; }
-@keyframes flashPop {
-  0% { opacity: 0; }
-  18% { opacity: .9; }
-  100% { opacity: 0; }
-}
-@keyframes flashPopStrong {
-  0% { opacity: 0; }
-  15% { opacity: 1; }
-  30% { opacity: .5; }
-  45% { opacity: 1; }
-  100% { opacity: 0; }
-}
-.burst-rarity {
-  position: relative;
-  z-index: 2;
-  font-family: var(--font-display);
-  font-size: 26px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  margin: 0;
-  opacity: 0;
-  color: var(--gold-bright);
-  text-shadow: 0 0 26px rgba(232,206,142,0.8);
-}
-.burst-rarity.is-shown { animation: rarityPop .6s cubic-bezier(.2,.8,.3,1.3) both; }
-@keyframes rarityPop {
-  0% { opacity: 0; transform: scale(0.5); }
-  60% { opacity: 1; transform: scale(1.15); }
-  100% { opacity: 1; transform: scale(1); }
-}
-
-.burst-field { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
-.burst-particle {
-  position: absolute;
-  top: 50%; left: 50%;
-  width: 5px; height: 5px;
-  border-radius: 50%;
-  background: var(--gold);
-  opacity: 0;
-}
-.burst-particle.is-firing { animation: burstFly 1.1s cubic-bezier(.15,.6,.3,1) forwards; }
-@keyframes burstFly {
-  0% { opacity: 1; transform: translate(-50%,-50%) translate(0,0) scale(1); }
-  100% { opacity: 0; transform: translate(-50%,-50%) translate(var(--bx), var(--by)) scale(0.3); }
-}
 
 /* ==========================================================================
-   ③ 結果
+   PHASE 4 — HEARTBEAT
    ========================================================================== */
-.card--result { padding-top: 40px; }
-.result-rarity-label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.2em;
-  margin: 0 0 10px;
-  min-height: 14px;
+
+#phase-heartbeat {
+
+  background: #000;
+
+  z-index: 28;
 }
-.result-rarity-label[data-rarity="rare"] { color: var(--rare-glow); }
-.result-rarity-label[data-rarity="secret"] { color: var(--secret-glow); text-shadow: 0 0 12px rgba(244,215,122,0.5); }
-.result-eyebrow {
-  font-size: 12px;
-  letter-spacing: 0.14em;
-  color: var(--sage-deep);
-  font-weight: 700;
-  margin: 0 0 16px;
+
+.heartbeat-container {
+
+  position: relative;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
 }
-.result-title {
-  font-family: var(--font-display);
-  font-size: 22px;
-  line-height: 1.6;
-  color: var(--brown-deep);
-  margin: 0 0 12px;
-}
-.result-message {
-  font-size: 13.5px;
-  line-height: 1.9;
-  color: var(--brown-mid);
-  margin: 0;
-}
-.card-divider {
+
+.heartbeat-core {
+
   width: 34px;
-  height: 1px;
-  background: var(--beige-deep);
-  margin: 30px auto 24px;
+  height: 34px;
+
+  border-radius: 50%;
+
+  background:
+    radial-gradient(
+      circle,
+      #fff9e7,
+      var(--gold-deep) 55%,
+      transparent 75%
+    );
+
+  animation:
+    heartPulse .75s ease-in-out infinite;
+
+  box-shadow:
+    0 0 35px 10px rgba(232,206,142,.45);
 }
-.result-closing {
-  font-size: 12.5px;
-  line-height: 1.9;
+
+@keyframes heartPulse {
+
+  0%,
+  100% {
+    transform: scale(.8);
+    box-shadow:
+      0 0 25px 5px rgba(232,206,142,.35);
+  }
+
+  35% {
+    transform: scale(1.45);
+    box-shadow:
+      0 0 55px 20px rgba(232,206,142,.75);
+  }
+
+  55% {
+    transform: scale(1);
+  }
+}
+
+.heartbeat-wave {
+
+  position: absolute;
+
+  width: 70px;
+  height: 70px;
+
+  border:
+    1px solid rgba(232,206,142,.3);
+
+  border-radius: 50%;
+
+  animation:
+    heartWave 1.5s ease-out infinite;
+}
+
+.wave-2 {
+  animation-delay: .4s;
+}
+
+.wave-3 {
+  animation-delay: .8s;
+}
+
+@keyframes heartWave {
+
+  0% {
+    transform: scale(.5);
+    opacity: .8;
+  }
+
+  100% {
+    transform: scale(3);
+    opacity: 0;
+  }
+}
+
+.heartbeat-text {
+
+  margin-top: 45px;
+
+  font-size: 9px;
+
+  letter-spacing: .3em;
+
+  color: rgba(255,255,255,.42);
+}
+
+
+/* ==========================================================================
+   PHASE 5 — BOX
+   ========================================================================== */
+
+#phase-box {
+
+  background:
+    radial-gradient(
+      circle at center,
+      rgba(232,206,142,.18),
+      #060403 60%
+    );
+
+  z-index: 25;
+}
+
+.box-stage {
+
+  position: relative;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+}
+
+.drop-box {
+
+  position: relative;
+
+  width: 128px;
+  height: 128px;
+
+  border-radius: 25px;
+
+  border:
+    1px solid rgba(232,206,142,.65);
+
+  background:
+    linear-gradient(
+      145deg,
+      #3b2d1e,
+      #0e0a06
+    );
+
+  box-shadow:
+
+    0 0 30px rgba(232,206,142,.2),
+
+    0 0 80px rgba(232,206,142,.12),
+
+    inset 0 0 30px rgba(0,0,0,.65);
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  animation:
+    boxAppear .9s
+    cubic-bezier(.15,.8,.25,1.3)
+    both,
+
+    boxFloat 1.8s
+    ease-in-out
+    1s infinite;
+}
+
+@keyframes boxAppear {
+
+  0% {
+    opacity: 0;
+    transform:
+      scale(.35)
+      translateY(40px);
+  }
+
+  70% {
+    transform:
+      scale(1.12)
+      translateY(-4px);
+  }
+
+  100% {
+    opacity: 1;
+    transform:
+      scale(1)
+      translateY(0);
+  }
+}
+
+@keyframes boxFloat {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.box-inner-glow {
+
+  position: absolute;
+
+  inset: 15px;
+
+  border-radius: 18px;
+
+  background:
+    radial-gradient(
+      circle,
+      rgba(232,206,142,.18),
+      transparent 70%
+    );
+
+  animation:
+    innerGlow 1.3s ease-in-out infinite;
+}
+
+@keyframes innerGlow {
+
+  0%,
+  100% {
+    opacity: .5;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+.box-symbol {
+
+  position: relative;
+
+  z-index: 2;
+
+  font-family: var(--font-display);
+
+  font-size: 38px;
+
+  font-weight: 800;
+
+  color: var(--gold-bright);
+
+  text-shadow:
+    0 0 20px rgba(232,206,142,.7);
+}
+
+.box-seal {
+
+  position: absolute;
+
+  width: 42px;
+  height: 42px;
+
+  border-radius: 50%;
+
+  border:
+    1px solid rgba(255,232,168,.65);
+
+  animation:
+    sealRotate 3s linear infinite;
+}
+
+@keyframes sealRotate {
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.box-shadow {
+
+  width: 130px;
+  height: 18px;
+
+  margin-top: 18px;
+
+  border-radius: 50%;
+
+  background:
+    rgba(0,0,0,.6);
+
+  filter: blur(8px);
+
+  animation:
+    shadowPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes shadowPulse {
+
+  50% {
+    transform: scale(.75);
+    opacity: .5;
+  }
+}
+
+.box-caption {
+
+  margin: 26px 0 0;
+
+  font-size: 10px;
+
+  letter-spacing: .35em;
+
+  color: rgba(255,255,255,.48);
+}
+
+
+/* ==========================================================================
+   RARE EXTRA
+   ========================================================================== */
+
+#phase-blackout-extra {
+
+  background: #000;
+
+  z-index: 60;
+}
+
+.rare-warning {
+
+  display: flex;
+
+  gap: 12px;
+}
+
+.rare-warning span {
+
+  width: 5px;
+  height: 5px;
+
+  border-radius: 50%;
+
+  background: var(--gold);
+
+  animation:
+    warningPulse .6s ease-in-out infinite;
+}
+
+.rare-warning span:nth-child(2) {
+  animation-delay: .15s;
+}
+
+.rare-warning span:nth-child(3) {
+  animation-delay: .3s;
+}
+
+@keyframes warningPulse {
+
+  0%,
+  100% {
+    opacity: .25;
+    transform: scale(.7);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.5);
+  }
+}
+
+
+/* ==========================================================================
+   SECRET
+   ========================================================================== */
+
+#phase-special {
+
+  background:
+    radial-gradient(
+      circle,
+      rgba(255,228,140,.25),
+      #000 65%
+    );
+
+  z-index: 65;
+}
+
+.secret-stage {
+
+  position: relative;
+
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+}
+
+.secret-glow {
+
+  width: 220px;
+  height: 220px;
+
+  border-radius: 50%;
+
+  background:
+    radial-gradient(
+      circle,
+      rgba(255,239,177,.75),
+      rgba(244,215,122,.25) 35%,
+      transparent 70%
+    );
+
+  filter: blur(7px);
+
+  animation:
+    secretPulse .8s ease-in-out infinite;
+}
+
+@keyframes secretPulse {
+
+  0%,
+  100% {
+    transform: scale(.7);
+    opacity: .55;
+  }
+
+  50% {
+    transform: scale(1.25);
+    opacity: 1;
+  }
+}
+
+.secret-rays {
+
+  position: absolute;
+
+  width: 400px;
+  height: 400px;
+
+  background:
+    repeating-conic-gradient(
+      from 0deg,
+      rgba(255,232,150,.18) 0deg 4deg,
+      transparent 4deg 18deg
+    );
+
+  animation:
+    raysRotate 4s linear infinite;
+}
+
+@keyframes raysRotate {
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.secret-text {
+
+  position: absolute;
+
+  color: var(--secret);
+
+  font-family: var(--font-display);
+
+  font-size: 13px;
+
+  letter-spacing: .25em;
+
+  text-shadow:
+    0 0 20px rgba(255,232,150,.8);
+
+  animation:
+    secretText .8s ease both;
+}
+
+@keyframes secretText {
+
+  from {
+    opacity: 0;
+    transform: scale(.7);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+
+/* ==========================================================================
+   FINAL BURST
+   ========================================================================== */
+
+#phase-burst {
+
+  background: #000;
+
+  z-index: 100;
+}
+
+.burst-flash {
+
+  position: absolute;
+
+  inset: 0;
+
+  background: #fff;
+
+  opacity: 0;
+
+  pointer-events: none;
+}
+
+.burst-flash.is-flashing {
+
+  animation:
+    flashNormal .8s ease both;
+}
+
+.burst-flash.is-flashing--strong {
+
+  animation:
+    flashStrong 1s ease both;
+}
+
+@keyframes flashNormal {
+
+  0% {
+    opacity: 0;
+  }
+
+  15% {
+    opacity: .95;
+  }
+
+  30% {
+    opacity: .15;
+  }
+
+  45% {
+    opacity: .75;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes flashStrong {
+
+  0% {
+    opacity: 0;
+  }
+
+  12% {
+    opacity: 1;
+  }
+
+  25% {
+    opacity: .1;
+  }
+
+  38% {
+    opacity: .95;
+  }
+
+  55% {
+    opacity: .25;
+  }
+
+  70% {
+    opacity: .8;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+.burst-field {
+
+  position: absolute;
+
+  inset: 0;
+
+  pointer-events: none;
+}
+
+.burst-particle {
+
+  position: absolute;
+
+  top: 50%;
+  left: 50%;
+
+  width: 5px;
+  height: 5px;
+
+  border-radius: 50%;
+
+  background: var(--gold-bright);
+
+  box-shadow:
+    0 0 12px var(--gold);
+
+  opacity: 0;
+}
+
+.burst-particle.is-firing {
+
+  animation:
+    burstFly 1.4s
+    cubic-bezier(.15,.6,.25,1)
+    forwards;
+}
+
+@keyframes burstFly {
+
+  0% {
+    opacity: 1;
+
+    transform:
+      translate(-50%,-50%)
+      translate(0,0)
+      scale(1.3);
+  }
+
+  100% {
+    opacity: 0;
+
+    transform:
+      translate(-50%,-50%)
+      translate(var(--bx),var(--by))
+      scale(.1);
+  }
+}
+
+.burst-rings {
+
+  position: absolute;
+
+  width: 80px;
+  height: 80px;
+
+  border-radius: 50%;
+
+  border:
+    2px solid rgba(255,238,183,.8);
+
+  animation:
+    finalRing 1.2s ease-out forwards;
+}
+
+@keyframes finalRing {
+
+  from {
+    transform: scale(.2);
+    opacity: 1;
+  }
+
+  to {
+    transform: scale(7);
+    opacity: 0;
+  }
+}
+
+.burst-rarity {
+
+  position: relative;
+
+  z-index: 10;
+
+  margin: 0;
+
+  font-family: var(--font-display);
+
+  font-size: 29px;
+
+  font-weight: 800;
+
+  letter-spacing: .14em;
+
+  color: var(--gold-bright);
+
+  text-shadow:
+    0 0 25px rgba(255,233,160,.9);
+
+  opacity: 0;
+}
+
+.burst-rarity.is-shown {
+
+  animation:
+    rarityReveal .8s
+    cubic-bezier(.15,.8,.25,1.3)
+    both;
+}
+
+@keyframes rarityReveal {
+
+  0% {
+    opacity: 0;
+    transform: scale(.35);
+  }
+
+  65% {
+    opacity: 1;
+    transform: scale(1.18);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.burst-sub {
+
+  position: absolute;
+
+  top: calc(50% + 55px);
+
+  font-size: 9px;
+
+  letter-spacing: .35em;
+
+  color: rgba(255,255,255,.5);
+
+  opacity: 0;
+
+  animation:
+    burstSub .8s .3s ease forwards;
+}
+
+@keyframes burstSub {
+
+  to {
+    opacity: 1;
+  }
+}
+
+
+/* ==========================================================================
+   RESULT
+   ========================================================================== */
+
+.card--result {
+
+  padding-top: 42px;
+}
+
+.result-top-glow {
+
+  position: absolute;
+
+  top: -100px;
+  left: 50%;
+
+  width: 220px;
+  height: 220px;
+
+  transform: translateX(-50%);
+
+  border-radius: 50%;
+
+  background:
+    radial-gradient(
+      circle,
+      rgba(232,206,142,.18),
+      transparent 70%
+    );
+
+  pointer-events: none;
+}
+
+.result-eyebrow {
+
+  position: relative;
+
+  margin: 0 0 12px;
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  letter-spacing: .2em;
+
   color: var(--brown-soft);
-  margin: 0 0 22px;
 }
-.brand-mark-sm { display: flex; align-items: center; justify-content: center; }
+
+.result-rarity-label {
+
+  min-height: 15px;
+
+  margin: 0 0 9px;
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  letter-spacing: .2em;
+}
+
+.result-rarity-label[data-rarity="rare"] {
+
+  color: var(--rare);
+
+  text-shadow:
+    0 0 12px rgba(231,200,107,.4);
+}
+
+.result-rarity-label[data-rarity="secret"] {
+
+  color: var(--secret);
+
+  text-shadow:
+    0 0 16px rgba(255,234,160,.7);
+}
+
+.result-title {
+
+  margin: 0 0 13px;
+
+  font-family: var(--font-display);
+
+  font-size: 24px;
+
+  line-height: 1.55;
+
+  color: var(--brown-deep);
+}
+
+.result-message {
+
+  margin: 0;
+
+  font-size: 13.5px;
+
+  line-height: 1.9;
+
+  color: var(--brown-mid);
+}
+
+.card-divider {
+
+  width: 36px;
+  height: 1px;
+
+  margin: 30px auto 23px;
+
+  background: #DCCAAC;
+}
+
+.result-closing {
+
+  margin: 0 0 24px;
+
+  font-size: 12px;
+
+  line-height: 1.9;
+
+  color: var(--brown-soft);
+}
+
+.brand-mark {
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+}
 
 .already-note {
+
+  margin: 0 0 15px;
+
   font-size: 12px;
+
   color: var(--brown-soft);
-  margin: 0 0 18px;
 }
 
-/* -- フォールバック -- */
-.fallback-message {
-  font-size: 13.5px;
-  line-height: 1.9;
-  color: var(--brown-mid);
-  margin: 0;
-}
 
 /* ==========================================================================
-   Responsive
+   FALLBACK
    ========================================================================== */
-@media (max-width: 380px) {
-  .card { padding: 36px 22px 34px; }
-  .drop-title { font-size: 22px; }
+
+.fallback-message {
+
+  margin: 0;
+
+  font-size: 13.5px;
+
+  line-height: 1.9;
+
+  color: var(--brown-mid);
 }
 
+
+/* ==========================================================================
+   MOBILE
+   ========================================================================== */
+
+@media (max-width: 380px) {
+
+  .card {
+
+    padding-left: 22px;
+    padding-right: 22px;
+  }
+
+  .drop-title {
+    font-size: 24px;
+  }
+
+  .drop-message {
+    font-size: 14px;
+  }
+
+  .drop-box {
+    width: 112px;
+    height: 112px;
+  }
+
+  .burst-rarity {
+    font-size: 23px;
+  }
+}
+
+
+/* ==========================================================================
+   IMPORTANT
+   iPhoneの「視差効果を減らす」によってガチャが一瞬で終わらないようにする。
+   ========================================================================== */
+
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.001ms !important;
-    transition-duration: 0.001ms !important;
+
+  .cine-phase *,
+  .cine-phase::before,
+  .cine-phase::after {
+
+    animation-duration: inherit !important;
   }
 }
