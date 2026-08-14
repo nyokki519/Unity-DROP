@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
+<title>UNITY DROP</title>
+<meta name="description" content="UNITY DROP — 今日参加してくれたあなたへ、Unityからのちょっとした贈り物。">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;600;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- JavaScriptが読み込まれるまで／万が一エラーが起きても、画面が真っ白にならないための初期表示 -->
+<div class="bg-texture" aria-hidden="true"></div>
+
+<div class="app" id="app">
+
+  <!-- ============ ① オープニング ============ -->
+  <section class="screen screen-intro is-active" id="screen-intro">
+    <div class="card">
+      <span class="brand-ring" aria-hidden="true"></span>
+      <h1 class="drop-title">UNITY DROP</h1>
+      <p class="drop-message">今日のあなたへ、<br>ちょっとした贈り物。</p>
+
+      <button type="button" class="btn-open" id="btn-open">
+        <span>DROPを開く</span>
+      </button>
+
+      <p class="intro-note">お一人さま1回までとなります</p>
+    </div>
+  </section>
+
+  <!-- ============ ② 開封中 ============ -->
+  <section class="screen screen-opening" id="screen-opening">
+    <div class="opening-stage">
+      <div class="opening-glow" aria-hidden="true"></div>
+      <div class="opening-card" id="opening-card">
+        <span class="opening-seal" aria-hidden="true"></span>
+      </div>
+      <div class="sparkle-field" id="sparkle-field" aria-hidden="true"></div>
+    </div>
+  </section>
+
+  <!-- ============ ③ 結果 ============ -->
+  <section class="screen screen-result" id="screen-result">
+    <div class="card card--result">
+      <p class="result-eyebrow">🎁 TODAY'S DROP</p>
+      <h2 class="result-title" id="result-title">—</h2>
+      <p class="result-message" id="result-message">—</p>
+
+      <div class="card-divider" aria-hidden="true"></div>
+
+      <p class="result-closing">今日は参加してくれてありがとうございました。<br>またUnityでお会いできるのを楽しみにしています。</p>
+
+      <div class="brand-mark-sm">
+        <span class="brand-ring brand-ring--sm" aria-hidden="true"></span>
+        <span class="brand-name-sm">Unity</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 既にDROP済み ============ -->
+  <section class="screen screen-already" id="screen-already">
+    <div class="card card--result">
+      <p class="result-eyebrow">🎁 YOUR DROP</p>
+      <p class="already-note">このDROPはすでに開いています</p>
+      <h2 class="result-title" id="already-title">—</h2>
+      <p class="result-message" id="already-message">—</p>
+
+      <div class="card-divider" aria-hidden="true"></div>
+      <p class="result-closing">今日は参加してくれてありがとうございました。<br>またUnityでお会いできるのを楽しみにしています。</p>
+
+      <div class="brand-mark-sm">
+        <span class="brand-ring brand-ring--sm" aria-hidden="true"></span>
+        <span class="brand-name-sm">Unity</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ エラー用フォールバック ============ -->
+  <section class="screen screen-fallback" id="screen-fallback">
+    <div class="card">
+      <span class="brand-ring" aria-hidden="true"></span>
+      <h1 class="drop-title">UNITY DROP</h1>
+      <p class="fallback-message" id="fallback-message">ただいま準備中です。少し時間をおいてもう一度お試しください。</p>
+    </div>
+  </section>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

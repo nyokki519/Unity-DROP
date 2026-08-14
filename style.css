@@ -1,0 +1,289 @@
+/* ==========================================================================
+   UNITY DROP（シンプル版）— カフェブランドの延長線上にある「特別感」
+   ========================================================================== */
+
+:root {
+  --cream:        #FBF7F1;
+  --ivory:        #F4EDE1;
+  --beige:        #E9DCC7;
+  --beige-deep:   #DCCAAC;
+  --brown-deep:   #3E2E22;
+  --brown-mid:    #7C6350;
+  --brown-soft:   #A6907A;
+  --sage:         #92A87E;
+  --sage-deep:    #71875C;
+  --gold:         #E8CE8E;
+  --gold-deep:    #C9A85C;
+  --white:        #FFFFFF;
+  --line:         rgba(62, 46, 34, 0.10);
+  --shadow-soft:  0 16px 40px rgba(80, 60, 40, 0.12);
+
+  --font-display: 'Shippori Mincho', serif;
+  --font-body: 'Zen Kaku Gothic New', -apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif;
+
+  --radius-lg: 28px;
+  --radius-md: 16px;
+  --max-w: 420px;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; }
+body {
+  font-family: var(--font-body);
+  background: var(--cream);
+  color: var(--brown-deep);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+button { font-family: inherit; }
+
+.bg-texture {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 600px 460px at 10% -6%, rgba(233, 220, 199, 0.7), transparent 60%),
+    radial-gradient(ellipse 520px 520px at 105% 100%, rgba(232, 206, 142, 0.18), transparent 60%),
+    var(--cream);
+}
+
+.app { position: relative; z-index: 1; min-height: 100vh; min-height: 100dvh; }
+
+/* ==========================================================================
+   Screens
+   ========================================================================== */
+.screen {
+  display: none;
+  min-height: 100vh;
+  min-height: 100dvh;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 22px;
+}
+.screen.is-active { display: flex; animation: screenIn .5s ease both; }
+@keyframes screenIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.card {
+  width: 100%;
+  max-width: var(--max-w);
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  padding: 46px 30px 40px;
+  text-align: center;
+}
+
+/* -- ブランドリング（アンケートと共通の意匠） -- */
+.brand-ring {
+  display: inline-block;
+  position: relative;
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  border: 1.5px solid var(--gold-deep);
+  margin-bottom: 20px;
+}
+.brand-ring::before {
+  content: "";
+  position: absolute; inset: 8px;
+  border-radius: 50%;
+  border: 1px solid var(--beige-deep);
+}
+.brand-ring--sm { width: 26px; height: 26px; margin: 0; }
+.brand-ring--sm::before { inset: 4px; }
+
+/* ==========================================================================
+   ① オープニング
+   ========================================================================== */
+.drop-title {
+  font-family: var(--font-display);
+  font-size: 26px;
+  letter-spacing: 0.1em;
+  color: var(--brown-deep);
+  margin: 0 0 14px;
+}
+.drop-message {
+  font-size: 15px;
+  line-height: 1.9;
+  color: var(--brown-mid);
+  margin: 0 0 34px;
+}
+.btn-open {
+  appearance: none;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  padding: 17px 22px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  color: #2E2416;
+  background: linear-gradient(135deg, var(--gold-deep), var(--gold));
+  box-shadow: 0 12px 26px rgba(201, 168, 92, 0.32);
+  transition: transform .15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-open:active { transform: scale(0.97); }
+.intro-note {
+  margin: 18px 0 0;
+  font-size: 11.5px;
+  color: var(--brown-soft);
+  letter-spacing: 0.03em;
+}
+
+/* ==========================================================================
+   ② 開封演出
+   ========================================================================== */
+.screen-opening { padding: 0; }
+.opening-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.opening-glow {
+  position: absolute;
+  width: 260px; height: 260px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(232,206,142,0.45), transparent 70%);
+  filter: blur(10px);
+  opacity: 0;
+  animation: glowPulse 2.2s ease-in-out forwards;
+}
+@keyframes glowPulse {
+  0% { opacity: 0; transform: scale(0.6); }
+  40% { opacity: 1; transform: scale(1.15); }
+  100% { opacity: .6; transform: scale(1.4); }
+}
+
+.opening-card {
+  position: relative;
+  width: 128px; height: 128px;
+  border-radius: 24px;
+  background: linear-gradient(155deg, var(--white), var(--ivory));
+  border: 1px solid var(--beige-deep);
+  box-shadow: 0 20px 50px rgba(80,60,40,0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: cardFloat 1.6s ease-in-out infinite, cardOpen 2s cubic-bezier(.3,.7,.3,1) forwards;
+}
+@keyframes cardFloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(1.5deg); }
+}
+@keyframes cardOpen {
+  0% { transform: scale(0.9); opacity: 0; }
+  25% { transform: scale(1); opacity: 1; }
+  70% { transform: scale(1.06); }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+.opening-seal {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  border: 1.5px solid var(--gold-deep);
+  position: relative;
+}
+.opening-seal::before {
+  content: "";
+  position: absolute; inset: 7px;
+  border-radius: 50%;
+  background: var(--gold);
+  opacity: .6;
+}
+
+.sparkle-field { position: absolute; inset: 0; pointer-events: none; }
+.sparkle {
+  position: absolute;
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--gold);
+  opacity: 0;
+}
+.sparkle.is-firing { animation: sparkleFly 1.3s ease-out forwards; }
+@keyframes sparkleFly {
+  0% { opacity: 1; transform: translate(0,0) scale(1); }
+  100% { opacity: 0; transform: translate(var(--sx), var(--sy)) scale(0.3); }
+}
+
+/* ==========================================================================
+   ③ 結果
+   ========================================================================== */
+.card--result { padding-top: 40px; }
+.result-eyebrow {
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  color: var(--sage-deep);
+  font-weight: 700;
+  margin: 0 0 16px;
+}
+.result-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  line-height: 1.6;
+  color: var(--brown-deep);
+  margin: 0 0 12px;
+}
+.result-message {
+  font-size: 13.5px;
+  line-height: 1.9;
+  color: var(--brown-mid);
+  margin: 0;
+}
+.card-divider {
+  width: 34px;
+  height: 1px;
+  background: var(--beige-deep);
+  margin: 30px auto 24px;
+}
+.result-closing {
+  font-size: 12.5px;
+  line-height: 1.9;
+  color: var(--brown-soft);
+  margin: 0 0 22px;
+}
+.brand-mark-sm { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.brand-name-sm {
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  color: var(--brown-soft);
+}
+
+.already-note {
+  font-size: 12px;
+  color: var(--brown-soft);
+  margin: 0 0 18px;
+}
+
+/* -- フォールバック -- */
+.fallback-message {
+  font-size: 13.5px;
+  line-height: 1.9;
+  color: var(--brown-mid);
+  margin: 0;
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+@media (max-width: 380px) {
+  .card { padding: 38px 22px 34px; }
+  .drop-title { font-size: 22px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
