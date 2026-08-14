@@ -20,7 +20,7 @@ const DROP_CONFIG = {
 
   // 管理者用メモ
   // ※全体人数制限ではありません
-  totalDrops: 10
+  totalDrops: 100
 
 };
 
@@ -51,7 +51,7 @@ const DROP_ITEMS = [
     message:
       "次回のUnityイベントで使える特典です。スタッフにお伝えください。",
 
-    count: 7
+    count: 80
   },
 
   {
@@ -62,7 +62,7 @@ const DROP_ITEMS = [
     message:
       "少し特別な特典です。内容はスタッフにお声がけください。",
 
-    count: 2
+    count: 15
   },
 
   {
@@ -73,7 +73,7 @@ const DROP_ITEMS = [
     message:
       "おめでとうございます。特別なDROPです。内容はスタッフにお声がけください。",
 
-    count: 1
+    count: 5
   }
 
 ];
