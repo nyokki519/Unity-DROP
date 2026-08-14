@@ -1,97 +1,670 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
-<title>UNITY DROP</title>
-<meta name="description" content="UNITY DROP — 今日参加してくれたあなたへ、Unityからのちょっとした贈り物。">
+  <meta charset="UTF-8">
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;600;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  >
 
-<link rel="stylesheet" href="style.css">
+  <meta
+    name="theme-color"
+    content="#15130f"
+  >
+
+  <meta
+    name="description"
+    content="UNITY DROP — Unityイベント参加者限定のスペシャルドロップ"
+  >
+
+  <title>UNITY DROP</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;600;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap"
+    rel="stylesheet"
+  >
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
-<!-- JavaScriptが読み込まれるまで／万が一エラーが起きても、画面が真っ白にならないための初期表示 -->
-<div class="bg-texture" aria-hidden="true"></div>
+  <!-- =========================================================
+       背景
+  ========================================================== -->
 
-<div class="app" id="app">
+  <div
+    class="bg-texture"
+    aria-hidden="true"
+  ></div>
 
-  <!-- ============ ① オープニング ============ -->
-  <section class="screen screen-intro is-active" id="screen-intro">
-    <div class="card">
-      <span class="brand-ring" aria-hidden="true"></span>
-      <h1 class="drop-title">UNITY DROP</h1>
-      <p class="drop-message">今日のあなたへ、<br>ちょっとした贈り物。</p>
 
-      <button type="button" class="btn-open" id="btn-open">
-        <span>DROPを開く</span>
-      </button>
+  <!-- =========================================================
+       アプリ本体
+  ========================================================== -->
 
-      <p class="intro-note">お一人さま1回までとなります</p>
-    </div>
-  </section>
+  <main
+    class="app"
+    id="app"
+  >
 
-  <!-- ============ ② 開封中 ============ -->
-  <section class="screen screen-opening" id="screen-opening">
-    <div class="opening-stage">
-      <div class="opening-glow" aria-hidden="true"></div>
-      <div class="opening-card" id="opening-card">
-        <span class="opening-seal" aria-hidden="true"></span>
+
+    <!-- =======================================================
+         1. INTRO
+    ======================================================== -->
+
+    <section
+      class="screen screen-intro is-active"
+      id="screen-intro"
+      aria-labelledby="intro-title"
+    >
+
+      <div class="intro-inner">
+
+        <!-- Unityロゴ -->
+        <div
+          class="brand-mark"
+          aria-label="Unity"
+        >
+
+          <span
+            class="brand-ring"
+            aria-hidden="true"
+          ></span>
+
+          <div
+            class="brand-cup"
+            aria-hidden="true"
+          >
+            ☕
+          </div>
+
+        </div>
+
+
+        <p class="brand-name">
+          Unity
+        </p>
+
+
+        <p class="brand-tagline">
+          一生ものの仲間と、成長する。
+        </p>
+
+
+        <div
+          class="intro-divider"
+          aria-hidden="true"
+        ></div>
+
+
+        <p
+          class="intro-eyebrow"
+          id="intro-title"
+        >
+          UNITY DROP
+        </p>
+
+
+        <h1 class="intro-message">
+          あなたのDROPを<br>
+          開こう。
+        </h1>
+
+
+        <p class="intro-submessage">
+          イベント参加のお楽しみ。<br>
+          今回のあなたの特典が決まります。
+        </p>
+
+
+        <!-- DROPを開くボタン -->
+
+        <button
+          type="button"
+          class="btn btn-primary btn-open"
+          id="btn-open"
+        >
+
+          <span class="btn-open-icon">
+            ☕
+          </span>
+
+          <span>
+            DROPを開く
+          </span>
+
+          <span
+            class="btn-arrow"
+            aria-hidden="true"
+          >
+            →
+          </span>
+
+        </button>
+
+
+        <p class="intro-note">
+          ※ DROPは1端末につき1回まで
+        </p>
+
       </div>
-      <div class="sparkle-field" id="sparkle-field" aria-hidden="true"></div>
-    </div>
-  </section>
 
-  <!-- ============ ③ 結果 ============ -->
-  <section class="screen screen-result" id="screen-result">
-    <div class="card card--result">
-      <p class="result-eyebrow">🎁 TODAY'S DROP</p>
-      <h2 class="result-title" id="result-title">—</h2>
-      <p class="result-message" id="result-message">—</p>
+    </section>
 
-      <div class="card-divider" aria-hidden="true"></div>
 
-      <p class="result-closing">今日は参加してくれてありがとうございました。<br>またUnityでお会いできるのを楽しみにしています。</p>
 
-      <div class="brand-mark-sm">
-        <span class="brand-ring brand-ring--sm" aria-hidden="true"></span>
-        <span class="brand-name-sm">Unity</span>
+    <!-- =======================================================
+         2. OPENING
+    ======================================================== -->
+
+    <section
+      class="screen screen-opening"
+      id="screen-opening"
+      aria-live="polite"
+      aria-label="DROP開封演出"
+    >
+
+      <div class="opening-inner">
+
+
+        <!-- 背景の光 -->
+
+        <div
+          class="opening-glow opening-glow-1"
+          aria-hidden="true"
+        ></div>
+
+        <div
+          class="opening-glow opening-glow-2"
+          aria-hidden="true"
+        ></div>
+
+        <div
+          class="opening-glow opening-glow-3"
+          aria-hidden="true"
+        ></div>
+
+
+        <!-- 粒子 -->
+
+        <div
+          class="sparkle-field"
+          id="sparkle-field"
+          aria-hidden="true"
+        ></div>
+
+
+        <!-- 光のリング -->
+
+        <div
+          class="opening-ring opening-ring-1"
+          aria-hidden="true"
+        ></div>
+
+        <div
+          class="opening-ring opening-ring-2"
+          aria-hidden="true"
+        ></div>
+
+        <div
+          class="opening-ring opening-ring-3"
+          aria-hidden="true"
+        ></div>
+
+
+        <!-- 中央ロゴ -->
+
+        <div
+          class="opening-logo"
+          aria-hidden="true"
+        >
+
+          <div class="opening-logo-ring"></div>
+
+          <div class="opening-logo-cup">
+            ☕
+          </div>
+
+          <div class="opening-logo-name">
+            Unity
+          </div>
+
+        </div>
+
+
+        <!-- 開封テキスト -->
+
+        <div class="opening-copy">
+
+          <p class="opening-eyebrow">
+            UNITY DROP
+          </p>
+
+          <p class="opening-title">
+            YOUR DROP
+          </p>
+
+          <p class="opening-subtitle">
+            NOW OPENING...
+          </p>
+
+        </div>
+
+
+        <!-- ローディング -->
+
+        <div
+          class="opening-loader"
+          aria-hidden="true"
+        >
+
+          <span></span>
+          <span></span>
+          <span></span>
+
+        </div>
+
       </div>
-    </div>
-  </section>
 
-  <!-- ============ 既にDROP済み ============ -->
-  <section class="screen screen-already" id="screen-already">
-    <div class="card card--result">
-      <p class="result-eyebrow">🎁 YOUR DROP</p>
-      <p class="already-note">このDROPはすでに開いています</p>
-      <h2 class="result-title" id="already-title">—</h2>
-      <p class="result-message" id="already-message">—</p>
+    </section>
 
-      <div class="card-divider" aria-hidden="true"></div>
-      <p class="result-closing">今日は参加してくれてありがとうございました。<br>またUnityでお会いできるのを楽しみにしています。</p>
 
-      <div class="brand-mark-sm">
-        <span class="brand-ring brand-ring--sm" aria-hidden="true"></span>
-        <span class="brand-name-sm">Unity</span>
+
+    <!-- =======================================================
+         3. RESULT
+    ======================================================== -->
+
+    <section
+      class="screen screen-result"
+      id="screen-result"
+      aria-labelledby="result-title"
+    >
+
+      <div class="result-inner">
+
+
+        <!-- 上部ラベル -->
+
+        <div class="result-top">
+
+          <p class="result-eyebrow">
+            UNITY DROP
+          </p>
+
+          <div class="result-line"></div>
+
+        </div>
+
+
+        <!-- 結果カード -->
+
+        <div
+          class="result-card"
+          id="result-card"
+        >
+
+
+          <!-- カード上部 -->
+
+          <div class="result-card-top">
+
+            <span class="result-card-label">
+              YOUR REWARD
+            </span>
+
+            <span
+              class="result-card-mark"
+              aria-hidden="true"
+            >
+              ☕
+            </span>
+
+          </div>
+
+
+          <!-- 光 -->
+
+          <div
+            class="result-card-glow"
+            aria-hidden="true"
+          ></div>
+
+
+          <!-- 結果 -->
+
+          <div class="result-content">
+
+            <div
+              class="result-icon"
+              aria-hidden="true"
+            >
+              ✦
+            </div>
+
+
+            <p
+              class="result-small"
+              id="result-rarity"
+            >
+              DROP RESULT
+            </p>
+
+
+            <h1
+              class="result-title"
+              id="result-title"
+            >
+              DROP
+            </h1>
+
+
+            <p
+              class="result-message"
+              id="result-message"
+            >
+              おめでとうございます！
+            </p>
+
+          </div>
+
+
+          <!-- カード下部 -->
+
+          <div class="result-card-bottom">
+
+            <span>
+              UNITY
+            </span>
+
+            <span>
+              DROP
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <!-- お祝いメッセージ -->
+
+        <div class="result-thanks">
+
+          <p>
+            Congratulations!
+          </p>
+
+          <span>
+            Unityでの時間を楽しんでください。
+          </span>
+
+        </div>
+
+
+        <!-- Unity -->
+
+        <div class="result-brand">
+
+          <div class="result-brand-mark">
+
+            <span
+              class="result-brand-ring"
+              aria-hidden="true"
+            ></span>
+
+            <span class="result-brand-cup">
+              ☕
+            </span>
+
+          </div>
+
+          <p>
+            Unity
+          </p>
+
+          <small>
+            一生ものの仲間と、成長する。
+          </small>
+
+        </div>
+
       </div>
-    </div>
-  </section>
 
-  <!-- ============ エラー用フォールバック ============ -->
-  <section class="screen screen-fallback" id="screen-fallback">
-    <div class="card">
-      <span class="brand-ring" aria-hidden="true"></span>
-      <h1 class="drop-title">UNITY DROP</h1>
-      <p class="fallback-message" id="fallback-message">ただいま準備中です。少し時間をおいてもう一度お試しください。</p>
-    </div>
-  </section>
+    </section>
 
-</div>
 
-<script src="script.js"></script>
+
+    <!-- =======================================================
+         4. ALREADY OPENED
+    ======================================================== -->
+
+    <section
+      class="screen screen-already"
+      id="screen-already"
+      aria-labelledby="already-title"
+    >
+
+      <div class="already-inner">
+
+
+        <!-- Unityロゴ -->
+
+        <div class="already-brand">
+
+          <div class="already-brand-mark">
+
+            <span
+              class="already-brand-ring"
+              aria-hidden="true"
+            ></span>
+
+            <span class="already-brand-cup">
+              ☕
+            </span>
+
+          </div>
+
+          <p>
+            Unity
+          </p>
+
+        </div>
+
+
+        <div class="already-divider"></div>
+
+
+        <p class="already-eyebrow">
+          UNITY DROP
+        </p>
+
+
+        <div
+          class="already-icon"
+          aria-hidden="true"
+        >
+          ✓
+        </div>
+
+
+        <h1 id="already-title">
+          DROP済み
+        </h1>
+
+
+        <p
+          class="already-message"
+          id="already-message"
+        >
+          このDROPはすでに開いています。
+        </p>
+
+
+        <div class="already-card">
+
+          <span>
+            YOUR DROP
+          </span>
+
+          <strong id="already-title">
+            DROP
+          </strong>
+
+          <p id="already-message">
+            このDROPはすでに開いています。
+          </p>
+
+        </div>
+
+
+        <p class="already-note">
+          同じ端末・ブラウザでは<br>
+          同じイベントのDROPをもう一度引くことはできません。
+        </p>
+
+
+        <div class="already-footer">
+
+          <span>
+            UNITY DROP
+          </span>
+
+          <span>
+            ☕
+          </span>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- =======================================================
+         5. FALLBACK / ERROR
+    ======================================================== -->
+
+    <section
+      class="screen screen-fallback"
+      id="screen-fallback"
+      aria-labelledby="fallback-title"
+    >
+
+      <div class="fallback-inner">
+
+
+        <div class="fallback-brand">
+
+          <div class="fallback-logo">
+            ☕
+          </div>
+
+          <p>
+            Unity
+          </p>
+
+        </div>
+
+
+        <div class="fallback-divider"></div>
+
+
+        <p class="fallback-eyebrow">
+          UNITY DROP
+        </p>
+
+
+        <div
+          class="fallback-icon"
+          aria-hidden="true"
+        >
+          !
+        </div>
+
+
+        <h1 id="fallback-title">
+          エラーが発生しました
+        </h1>
+
+
+        <p
+          class="fallback-message"
+          id="fallback-message"
+        >
+          予期しないエラーが発生しました。
+          ページを再読み込みしてお試しください。
+        </p>
+
+
+        <button
+          type="button"
+          class="btn btn-primary"
+          onclick="window.location.reload()"
+        >
+          ページを再読み込み
+        </button>
+
+
+        <p class="fallback-note">
+          改善しない場合は運営スタッフへお声がけください。
+        </p>
+
+      </div>
+
+    </section>
+
+
+  </main>
+
+
+
+  <!-- =========================================================
+       GLOBAL PARTICLE FIELD
+  ========================================================== -->
+
+  <div
+    class="global-particle-field"
+    id="global-particle-field"
+    aria-hidden="true"
+  ></div>
+
+
+
+  <!-- =========================================================
+       FLASH EFFECT
+  ========================================================== -->
+
+  <div
+    class="screen-flash"
+    id="screen-flash"
+    aria-hidden="true"
+  ></div>
+
+
+
+  <!-- =========================================================
+       VIGNETTE
+  ========================================================== -->
+
+  <div
+    class="vignette"
+    aria-hidden="true"
+  ></div>
+
+
+
+  <!-- =========================================================
+       JS
+  ========================================================== -->
+
+  <script src="script.js"></script>
+
 </body>
 </html>
