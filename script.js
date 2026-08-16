@@ -1,10 +1,7 @@
 /* ==========================================================================
    UNITY DROP
    Ultimate Cinematic Edition
-   + Dynamic Suspense
-   + Rarity Escalation
-   + Cinematic Sound
-   + Impact / Burst System
+   Gacha Capsule Edition
 
    ・日本時間で1日1回
    ・日付が変わると自動的に新しいDROP
@@ -12,6 +9,7 @@
    ・GitHub Pagesのみで動作
    ・HTML変更不要
    ・Web Audio API対応
+   ・ガチャカプセル演出
    ========================================================================== */
 
 
@@ -215,7 +213,8 @@ const DROP_ITEMS = [
       options.attack ?? 0.01;
 
 
-    osc.type = type;
+    osc.type =
+      type;
 
 
     osc.frequency.setValueAtTime(
@@ -260,6 +259,7 @@ const DROP_ITEMS = [
 
 
     osc.start(now);
+
 
     osc.stop(
       now + duration + 0.05
@@ -369,6 +369,7 @@ const DROP_ITEMS = [
 
 
     source.start(now);
+
 
     source.stop(
       now + duration + 0.03
@@ -617,10 +618,12 @@ const DROP_ITEMS = [
 
 
   /* ==========================================================================
-     SOUND — BOX
+     SOUND — CAPSULE
      ========================================================================== */
 
-  function soundBox() {
+  function soundCapsule() {
+
+    /* 低い振動 */
 
     tone(
       58,
@@ -646,6 +649,8 @@ const DROP_ITEMS = [
     );
 
 
+    /* エネルギー上昇 */
+
     setTimeout(() => {
 
       tone(
@@ -667,6 +672,108 @@ const DROP_ITEMS = [
       0.025,
       1700
     );
+
+
+    /* 開封直前 */
+
+    setTimeout(() => {
+
+      tone(
+        75,
+        0.55,
+        {
+          type: "sine",
+          volume: 0.14,
+          attack: 0.01,
+          endFrequency: 42
+        }
+      );
+
+    }, 1450);
+
+  }
+
+
+  /* ==========================================================================
+     SOUND — CAPSULE OPEN
+     ========================================================================== */
+
+  function soundCapsuleOpen(
+    rarity
+  ) {
+
+    const secret =
+      rarity === "secret";
+
+
+    const rare =
+      rarity === "rare";
+
+
+    /* パカッ */
+
+    noise(
+      0.32,
+      secret ? 0.16 : rare ? 0.12 : 0.095,
+      secret ? 5200 : 3600
+    );
+
+
+    tone(
+      130,
+      0.42,
+      {
+        type: "sine",
+        volume: secret ? 0.2 : 0.14,
+        attack: 0.005,
+        endFrequency:
+          secret ? 42 : 55
+      }
+    );
+
+
+    /* 光が開く */
+
+    setTimeout(() => {
+
+      tone(
+        secret ? 880 : rare ? 720 : 560,
+        0.7,
+        {
+          type: "sine",
+          volume:
+            secret
+              ? 0.16
+              : rare
+                ? 0.11
+                : 0.075,
+          attack: 0.01,
+          endFrequency:
+            secret ? 1800 : 1100
+        }
+      );
+
+    }, 90);
+
+
+    if (secret) {
+
+      setTimeout(() => {
+
+        tone(
+          1800,
+          0.8,
+          {
+            type: "triangle",
+            volume: 0.1,
+            attack: 0.01,
+            endFrequency: 2800
+          }
+        );
+
+      }, 230);
+
+    }
 
   }
 
@@ -818,7 +925,9 @@ const DROP_ITEMS = [
      SOUND — FINAL
      ========================================================================== */
 
-  function soundBurst(rarity) {
+  function soundBurst(
+    rarity
+  ) {
 
     const secret =
       rarity === "secret";
@@ -833,7 +942,8 @@ const DROP_ITEMS = [
       secret ? 2.0 : 1.4,
       {
         type: "sine",
-        volume: secret ? 0.32 : 0.24,
+        volume:
+          secret ? 0.32 : 0.24,
         attack: 0.008,
         endFrequency:
           secret ? 25 : 34
@@ -853,7 +963,8 @@ const DROP_ITEMS = [
       0.9,
       {
         type: "sine",
-        volume: secret ? 0.15 : 0.085,
+        volume:
+          secret ? 0.15 : 0.085,
         attack: 0.008,
         endFrequency:
           secret ? 2500 : 1450
@@ -861,7 +972,10 @@ const DROP_ITEMS = [
     );
 
 
-    if (rare || secret) {
+    if (
+      rare ||
+      secret
+    ) {
 
       setTimeout(() => {
 
@@ -892,25 +1006,27 @@ const DROP_ITEMS = [
         500,
         600,
         700
-      ].forEach((delay, index) => {
+      ].forEach(
+        (delay, index) => {
 
-        setTimeout(() => {
+          setTimeout(() => {
 
-          tone(
-            1100 + index * 190,
-            0.35,
-            {
-              type: "sine",
-              volume: 0.075,
-              attack: 0.004,
-              endFrequency:
-                1600 + index * 220
-            }
-          );
+            tone(
+              1100 + index * 190,
+              0.35,
+              {
+                type: "sine",
+                volume: 0.075,
+                attack: 0.004,
+                endFrequency:
+                  1600 + index * 220
+              }
+            );
 
-        }, delay);
+          }, delay);
 
-      });
+        }
+      );
 
     }
 
@@ -1096,7 +1212,9 @@ const DROP_ITEMS = [
     });
 
 
-    if (totalWeight <= 0) {
+    if (
+      totalWeight <= 0
+    ) {
 
       return null;
 
@@ -1125,10 +1243,13 @@ const DROP_ITEMS = [
         );
 
 
-      random -= weight;
+      random -=
+        weight;
 
 
-      if (random < 0) {
+      if (
+        random < 0
+      ) {
 
         return item;
 
@@ -1148,16 +1269,22 @@ const DROP_ITEMS = [
      RARITY
      ========================================================================== */
 
-  function rarityLabel(rarity) {
+  function rarityLabel(
+    rarity
+  ) {
 
-    if (rarity === "secret") {
+    if (
+      rarity === "secret"
+    ) {
 
       return "✦ SECRET RARE ✦";
 
     }
 
 
-    if (rarity === "rare") {
+    if (
+      rarity === "rare"
+    ) {
 
       return "◆ RARE DROP ◆";
 
@@ -1200,7 +1327,9 @@ const DROP_ITEMS = [
     if (title) {
 
       title.textContent =
-        safeText(item.title);
+        safeText(
+          item.title
+        );
 
     }
 
@@ -1208,7 +1337,9 @@ const DROP_ITEMS = [
     if (message) {
 
       message.textContent =
-        safeText(item.message);
+        safeText(
+          item.message
+        );
 
     }
 
@@ -1216,7 +1347,8 @@ const DROP_ITEMS = [
     if (rarity) {
 
       const r =
-        item.rarity || "common";
+        item.rarity ||
+        "common";
 
 
       if (
@@ -1235,7 +1367,9 @@ const DROP_ITEMS = [
 
       } else {
 
-        rarity.textContent = "";
+        rarity.textContent =
+          "";
+
 
         rarity.removeAttribute(
           "data-rarity"
@@ -1265,7 +1399,8 @@ const DROP_ITEMS = [
     }
 
 
-    field.innerHTML = "";
+    field.innerHTML =
+      "";
 
 
     for (
@@ -1351,25 +1486,40 @@ const DROP_ITEMS = [
     }
 
 
-    field.innerHTML = "";
+    field.innerHTML =
+      "";
 
 
-    let count = 38;
-    let distance = 190;
+    let count =
+      38;
 
 
-    if (rarity === "rare") {
+    let distance =
+      190;
 
-      count = 65;
-      distance = 270;
+
+    if (
+      rarity === "rare"
+    ) {
+
+      count =
+        65;
+
+      distance =
+        270;
 
     }
 
 
-    if (rarity === "secret") {
+    if (
+      rarity === "secret"
+    ) {
 
-      count = 110;
-      distance = 380;
+      count =
+        110;
+
+      distance =
+        380;
 
     }
 
@@ -1467,7 +1617,8 @@ const DROP_ITEMS = [
 
 
     cinematic.classList.add(
-      "rarity-" + rarity
+      "rarity-" +
+      rarity
     );
 
   }
@@ -1524,6 +1675,97 @@ const DROP_ITEMS = [
       );
 
     }
+
+  }
+
+
+  /* ==========================================================================
+     CAPSULE RESET
+     ========================================================================== */
+
+  function resetCapsule() {
+
+    const capsule =
+      document.querySelector(
+        ".drop-box"
+      );
+
+
+    if (!capsule) {
+
+      return;
+
+    }
+
+
+    capsule.classList.remove(
+      "is-opening"
+    );
+
+
+    void capsule.offsetWidth;
+
+  }
+
+
+  /* ==========================================================================
+     CAPSULE OPEN ANIMATION
+     ========================================================================== */
+
+  async function openCapsule(
+    rarity
+  ) {
+
+    const capsule =
+      document.querySelector(
+        ".drop-box"
+      );
+
+
+    if (!capsule) {
+
+      await wait(900);
+
+      return;
+
+    }
+
+
+    /* 初期化 */
+
+    capsule.classList.remove(
+      "is-opening"
+    );
+
+
+    void capsule.offsetWidth;
+
+
+    /* ガチャカプセルを少し待たせる */
+
+    await wait(550);
+
+
+    /* 開封開始 */
+
+    capsule.classList.add(
+      "is-opening"
+    );
+
+
+    soundCapsuleOpen(
+      rarity
+    );
+
+
+    /* 光が広がる時間 */
+
+    await wait(780);
+
+
+    capsule.classList.remove(
+      "is-opening"
+    );
 
   }
 
@@ -1690,7 +1932,8 @@ const DROP_ITEMS = [
 
     if (rings) {
 
-      rings.innerHTML = "";
+      rings.innerHTML =
+        "";
 
     }
 
@@ -1772,11 +2015,15 @@ const DROP_ITEMS = [
     }
 
 
-    if (rarity === "secret") {
+    if (
+      rarity === "secret"
+    ) {
 
       await wait(2500);
 
-    } else if (rarity === "rare") {
+    } else if (
+      rarity === "rare"
+    ) {
 
       await wait(1950);
 
@@ -1798,7 +2045,8 @@ const DROP_ITEMS = [
   ) {
 
     const rarity =
-      item.rarity || "common";
+      item.rarity ||
+      "common";
 
 
     applyRarityClass(
@@ -1890,7 +2138,7 @@ const DROP_ITEMS = [
 
 
     /* ================================================================
-       BOX
+       CAPSULE
        ================================================================ */
 
     setPhase(
@@ -1898,10 +2146,33 @@ const DROP_ITEMS = [
     );
 
 
-    soundBox();
+    resetCapsule();
 
 
-    await wait(1900);
+    soundCapsule();
+
+
+    /*
+      カプセルを見せる時間を確保
+    */
+
+    await wait(1050);
+
+
+    /*
+      ガチャカプセル開封
+    */
+
+    await openCapsule(
+      rarity
+    );
+
+
+    /*
+      開封後の余韻
+    */
+
+    await wait(250);
 
 
     /* ================================================================
@@ -2004,17 +2275,12 @@ const DROP_ITEMS = [
     }
 
 
-    /* ================================================================
-       AUDIO
-       ================================================================ */
+    /* AUDIO */
 
     initAudio();
 
 
-    /* ================================================================
-       抽選
-       ※ここで結果は確定
-       ================================================================ */
+    /* 抽選 */
 
     const item =
       pickRandomItem();
@@ -2032,9 +2298,7 @@ const DROP_ITEMS = [
     }
 
 
-    /* ================================================================
-       当選結果保存
-       ================================================================ */
+    /* 保存 */
 
     try {
 
@@ -2059,9 +2323,7 @@ const DROP_ITEMS = [
     }
 
 
-    /* ================================================================
-       演出開始
-       ================================================================ */
+    /* 演出 */
 
     try {
 
@@ -2302,7 +2564,8 @@ const DROP_ITEMS = [
      ========================================================================== */
 
   if (
-    document.readyState === "loading"
+    document.readyState ===
+    "loading"
   ) {
 
     document.addEventListener(
