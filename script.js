@@ -10,6 +10,7 @@
    ・HTML変更不要
    ・Web Audio API対応
    ・ガチャカプセル演出
+   ・クーポン有効期限：DROP取得日の1ヶ月後
    ========================================================================== */
 
 
@@ -623,8 +624,6 @@ const DROP_ITEMS = [
 
   function soundCapsule() {
 
-    /* 低い振動 */
-
     tone(
       58,
       2.3,
@@ -649,8 +648,6 @@ const DROP_ITEMS = [
     );
 
 
-    /* エネルギー上昇 */
-
     setTimeout(() => {
 
       tone(
@@ -673,8 +670,6 @@ const DROP_ITEMS = [
       1700
     );
 
-
-    /* 開封直前 */
 
     setTimeout(() => {
 
@@ -710,11 +705,9 @@ const DROP_ITEMS = [
       rarity === "rare";
 
 
-    /* パカッ */
-
     noise(
       0.32,
-      secret ? 0.16 : rare ? 0.12 : 0.095,
+           secret ? 0.16 : rare ? 0.12 : 0.095,
       secret ? 5200 : 3600
     );
 
@@ -731,8 +724,6 @@ const DROP_ITEMS = [
       }
     );
 
-
-    /* 光が開く */
 
     setTimeout(() => {
 
@@ -1090,6 +1081,104 @@ const DROP_ITEMS = [
 
 
   /* ==========================================================================
+     COUPON EXPIRATION
+     ========================================================================== */
+
+  function getExpirationDate() {
+
+    const now =
+      new Date();
+
+
+    const year =
+      now.getFullYear();
+
+
+    const month =
+      now.getMonth();
+
+
+    const day =
+      now.getDate();
+
+
+    /*
+     * 翌月の1日
+     */
+
+    const nextMonth =
+      new Date(
+        year,
+        month + 1,
+        1
+      );
+
+
+    /*
+     * 翌月の末日
+     */
+
+    const lastDay =
+      new Date(
+        nextMonth.getFullYear(),
+        nextMonth.getMonth() + 1,
+        0
+      ).getDate();
+
+
+    /*
+     * 翌月に同日が存在しない場合は月末
+     */
+
+    const expirationDay =
+      Math.min(
+        day,
+        lastDay
+      );
+
+
+    const expiration =
+      new Date(
+        nextMonth.getFullYear(),
+        nextMonth.getMonth(),
+        expirationDay
+      );
+
+
+    const expirationYear =
+      expiration.getFullYear();
+
+
+    const expirationMonth =
+      String(
+        expiration.getMonth() + 1
+      ).padStart(
+        2,
+        "0"
+      );
+
+
+    const expirationDate =
+      String(
+        expiration.getDate()
+      ).padStart(
+        2,
+        "0"
+      );
+
+
+    return (
+      expirationYear
+      + "/"
+      + expirationMonth
+      + "/"
+      + expirationDate
+    );
+
+  }
+
+
+  /* ==========================================================================
      STORAGE
      ========================================================================== */
 
@@ -1324,6 +1413,10 @@ const DROP_ITEMS = [
       $(prefix + "-rarity-label");
 
 
+    const expiration =
+      $(prefix + "-expiration");
+
+
     if (title) {
 
       title.textContent =
@@ -1374,6 +1467,30 @@ const DROP_ITEMS = [
         rarity.removeAttribute(
           "data-rarity"
         );
+
+      }
+
+    }
+
+
+    /* =========================================================
+       有効期限
+       ========================================================= */
+
+    if (expiration) {
+
+      if (item.expiresAt) {
+
+        expiration.textContent =
+          "有効期限：" +
+          safeText(
+            item.expiresAt
+          );
+
+      } else {
+
+        expiration.textContent =
+          "";
 
       }
 
@@ -1731,8 +1848,6 @@ const DROP_ITEMS = [
     }
 
 
-    /* 初期化 */
-
     capsule.classList.remove(
       "is-opening"
     );
@@ -1741,12 +1856,8 @@ const DROP_ITEMS = [
     void capsule.offsetWidth;
 
 
-    /* ガチャカプセルを少し待たせる */
-
     await wait(550);
 
-
-    /* 開封開始 */
 
     capsule.classList.add(
       "is-opening"
@@ -1757,8 +1868,6 @@ const DROP_ITEMS = [
       rarity
     );
 
-
-    /* 光が広がる時間 */
 
     await wait(780);
 
@@ -2152,25 +2261,13 @@ const DROP_ITEMS = [
     soundCapsule();
 
 
-    /*
-      カプセルを見せる時間を確保
-    */
-
     await wait(1050);
 
-
-    /*
-      ガチャカプセル開封
-    */
 
     await openCapsule(
       rarity
     );
 
-
-    /*
-      開封後の余韻
-    */
 
     await wait(250);
 
@@ -2298,7 +2395,17 @@ const DROP_ITEMS = [
     }
 
 
-    /* 保存 */
+    /* =========================================================
+       有効期限を設定
+       ========================================================= */
+
+    item.expiresAt =
+      getExpirationDate();
+
+
+    /* =========================================================
+       保存
+       ========================================================= */
 
     try {
 
@@ -2323,7 +2430,9 @@ const DROP_ITEMS = [
     }
 
 
-    /* 演出 */
+    /* =========================================================
+       演出
+       ========================================================= */
 
     try {
 
@@ -2500,7 +2609,11 @@ const DROP_ITEMS = [
             title: "DROP済み",
 
             message:
-              "本日分のDROPはすでに開いています。"
+              "本日分のDROPはすでに開いています。",
+
+            expiresAt:
+              getExpirationDate()
+
           }
         );
 
