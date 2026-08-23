@@ -33,12 +33,12 @@ const DROP_ITEMS = [
   {
     rarity: "common",
 
-    title: "次回イベント 200円OFF",
+    title: "リピーター会イベント 200円OFF",
 
     message:
       "次回のUnityイベントで使える特典です。スタッフにお伝えください。",
 
-    count: 75
+    count: 70
   },
 
   {
@@ -49,7 +49,7 @@ const DROP_ITEMS = [
     message:
       "少し特別な特典です。内容はスタッフにお声がけください。",
 
-    count: 15
+    count: 20
   },
 
   {
