@@ -83,6 +83,7 @@ const DROP_ITEMS = Object.freeze({
     const video = $("drop-video");
     const source = VIDEO_SOURCES[item.rarity];
     const skip = $("btn-skip");
+    const sound = $("btn-sound");
     if (!video || !source) return Promise.resolve();
     showScreen("screen-opening");
     return new Promise(resolve => {
@@ -93,13 +94,21 @@ const DROP_ITEMS = Object.freeze({
         finished = true;
         clearTimeout(timer);
         skip?.removeEventListener("click", finish);
+        sound?.removeEventListener("click", enableSound);
         video.removeEventListener("ended", finish);
         video.removeEventListener("error", finish);
         video.removeEventListener("timeupdate", progress);
         video.pause();
         video.removeAttribute("src");
         video.load();
+        if (sound) sound.hidden = true;
         resolve();
+      };
+      const enableSound = () => {
+        video.muted = false;
+        video.defaultMuted = false;
+        video.volume = 1;
+        if (sound) sound.hidden = true;
       };
       // A stalled download/playback must never hide an already awarded prize.
       const armWatchdog = () => {
@@ -114,17 +123,35 @@ const DROP_ITEMS = Object.freeze({
         }
       };
       skip?.addEventListener("click", finish);
+      sound?.addEventListener("click", enableSound);
       video.addEventListener("ended", finish);
       video.addEventListener("error", finish);
       video.addEventListener("timeupdate", progress);
-      video.muted = true;
-      video.defaultMuted = true;
+      if (sound) sound.hidden = true;
+      video.muted = false;
+      video.defaultMuted = false;
+      video.volume = 1;
       video.playsInline = true;
       video.loop = false;
       video.src = source;
       armWatchdog();
-      try { Promise.resolve(video.play()).catch(finish); }
-      catch (_) { finish(); }
+      try {
+        Promise.resolve(video.play()).catch(async () => {
+          // iPhone Safari may reject audible playback after the async draw request.
+          // Keep the reveal moving muted and offer a direct user-gesture SOUND ON control.
+          video.muted = true;
+          video.defaultMuted = true;
+          if (sound) sound.hidden = false;
+          try { await video.play(); }
+          catch (_) { finish(); }
+        });
+      } catch (_) {
+        video.muted = true;
+        video.defaultMuted = true;
+        if (sound) sound.hidden = false;
+        try { Promise.resolve(video.play()).catch(finish); }
+        catch (_) { finish(); }
+      }
     });
   }
 
@@ -142,7 +169,9 @@ const DROP_ITEMS = Object.freeze({
     try { item = await requestServerDraw(); }
     catch (error) {
       console.error("UNITY DROP backend draw error:", error);
+      opening = false;
       if (error.message === "pool_exhausted") return fallback("今回のDROPはすべて終了しました。ご参加ありがとうございました。");
+      if (error.message === "config_snapshot_mismatch") return fallback("本日のDROP設定を更新中です。少し時間をおいて、もう一度お試しください。");
       return fallback("通信が安定してから、もう一度お試しください。同じ抽選IDで安全に再開します。");
     }
     item.expiresAt = expirationDate();
