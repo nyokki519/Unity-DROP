@@ -10,9 +10,9 @@ const DROP_ITEMS = Object.freeze({
   const $ = id => document.getElementById(id);
   const screens = ["screen-intro", "screen-opening", "screen-result", "screen-already", "screen-fallback"];
   const VIDEO_SOURCES = Object.freeze({
-    common: "assets/videos/common.mp4",
+    common: "assets/videos/secret.mp4",
     rare: "assets/videos/rare.mp4",
-    secret: "assets/videos/secret.mp4"
+    secret: "assets/videos/common.mp4"
   });
   let opening = false;
 
