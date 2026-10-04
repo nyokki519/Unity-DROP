@@ -1,0 +1,16 @@
+name = "unity-drop-api"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+[vars]
+# Published raw URL of this repository's drop-config.json.
+CONFIG_URL = "https://raw.githubusercontent.com/nyokki519/Unity-DROP/main/drop-config.json"
+ALLOWED_ORIGINS = "https://nyokki519.github.io,http://localhost:4173"
+
+[[durable_objects.bindings]]
+name = "EVENT_POOLS"
+class_name = "EventPool"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["EventPool"]
