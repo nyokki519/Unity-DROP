@@ -38,27 +38,41 @@ const DROP_ITEMS = Object.freeze({
     return payload;
   }
 
-  async function participantToken() {
-    let token = localStorage.getItem(SESSION_KEY);
-    if (!token) {
-      token = (await api("/api/session")).token;
-      localStorage.setItem(SESSION_KEY, token);
-    }
+  async function createParticipantToken() {
+    const token = (await api("/api/session")).token;
+    localStorage.setItem(SESSION_KEY, token);
     return token;
   }
 
+  async function participantToken() {
+    return localStorage.getItem(SESSION_KEY) || createParticipantToken();
+  }
+
+  async function drawWithToken(token, requestId) {
+    return api("/api/draw", {
+      headers: { authorization: `Bearer ${token}` },
+      body: { requestId }
+    });
+  }
+
   async function requestServerDraw() {
-    const token = await participantToken();
+    let token = await participantToken();
     let requestId = localStorage.getItem(REQUEST_KEY);
     if (!requestId) {
       requestId = crypto.randomUUID();
       localStorage.setItem(REQUEST_KEY, requestId);
     }
 
-    const result = await api("/api/draw", {
-      headers: { authorization: `Bearer ${token}` },
-      body: { requestId }
-    });
+    let result;
+    try {
+      result = await drawWithToken(token, requestId);
+    } catch (error) {
+      if (error.status !== 401 && error.message !== "unauthorized") throw error;
+      localStorage.removeItem(SESSION_KEY);
+      token = await createParticipantToken();
+      result = await drawWithToken(token, requestId);
+    }
+
     const item = { ...DROP_ITEMS[result.rarity], eventId: result.event_id, drawRequestId: result.request_id, drawnAt: result.drawn_at };
     localStorage.setItem(RESULT_KEY, JSON.stringify(item));
     localStorage.removeItem(REQUEST_KEY);
