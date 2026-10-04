@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - "worker/**"
+      - ".github/workflows/deploy-worker.yml"
   workflow_dispatch:
 
 jobs:
@@ -43,3 +44,13 @@ jobs:
             --data '{}')
           echo "$response"
           node -e 'const x=JSON.parse(process.argv[1]); if (x.eventId !== 2026100402 || x.totalDraws !== 17) process.exit(1)' "$response"
+
+      - name: Smoke test session API
+        run: |
+          response=$(curl --fail-with-body --silent --show-error \
+            -X POST 'https://unity-drop-api.kukki519.workers.dev/api/session' \
+            -H 'Origin: https://nyokki519.github.io' \
+            -H 'Content-Type: application/json' \
+            --data '{}')
+          echo "$response" | sed -E 's/("token"[[:space:]]*:[[:space:]]*")[^"]+"/\1***"/'
+          node -e 'const x=JSON.parse(process.argv[1]); if (typeof x.token !== "string" || !x.token.includes(".")) process.exit(1)' "$response"
