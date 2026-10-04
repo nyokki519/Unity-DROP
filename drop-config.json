@@ -1,9 +1,9 @@
 {
   "eventId": 20261004,
-  "totalDraws": 30,
+  "totalDraws": 17,
   "inventory": {
-    "secret": 1,
-    "rare": 5,
-    "common": 24
+    "secret": 0,
+    "rare": 2,
+    "common": 15
   }
 }
