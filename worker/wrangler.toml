@@ -1,6 +1,7 @@
 name = "unity-drop-api"
 main = "src/index.js"
 compatibility_date = "2026-09-01"
+keep_vars = true
 
 [vars]
 # Published raw URL of this repository's drop-config.json.
