@@ -27,7 +27,7 @@ jobs:
 
       - name: Run one production draw through UI
         run: |
-          cat > /tmp/e2e.mjs <<'EOF'
+          cat > e2e.mjs <<'EOF'
           import { chromium } from 'playwright';
           const browser = await chromium.launch({ headless: true });
           const page = await browser.newPage();
@@ -59,4 +59,4 @@ jobs:
           if (messages.length) console.log('BROWSER_MESSAGES', JSON.stringify(messages));
           await browser.close();
           EOF
-          node /tmp/e2e.mjs
+          node e2e.mjs
