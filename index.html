@@ -32,42 +32,9 @@
       <footer><span>UNITY</span><span>DROP • CONNECTION • LIGHT</span></footer>
     </section>
 
-    <section class="screen cinematic-screen" id="screen-opening" aria-live="polite">
-      <button class="skip" id="btn-skip" type="button">SKIP <span>›</span></button>
-      <div class="cinematic" id="cinematic">
-        <div class="cine-bg"><div class="nebula"></div><div class="stars" id="stars"></div><div class="vignette"></div></div>
-        <div class="phase" id="phase-awaken">
-          <p class="phase-label">THE CONNECTION AWAKENS</p>
-          <div class="awaken-mark"><div class="mark-orbit"></div><div class="mark-core">U</div></div>
-          <p class="phase-copy">光が、あなたを見つけた。</p>
-        </div>
-        <div class="phase" id="phase-drop">
-          <div class="falling-drop"><i></i></div><div class="impact-core"></div><div class="shockwave"></div>
-          <p class="phase-label bottom">A DROP HAS ARRIVED</p>
-        </div>
-        <div class="phase" id="phase-charge">
-          <p class="phase-label">CONNECTING</p><div class="charge-field" id="charge-field"></div>
-          <div class="charge-rings"><i></i><i></i><i></i><b></b></div>
-          <div class="omen" id="omen"><span>RESONANCE</span><b id="omen-level">IVORY</b></div>
-          <p class="charge-percent" id="charge-percent">0</p><p class="phase-copy">すべての光が、ひとつになる。</p>
-        </div>
-        <div class="phase" id="phase-break">
-          <div class="break-shell"><i></i><i></i><i></i><span>U</span></div><div class="crack-flash"></div>
-          <p class="phase-label bottom">BREAK THE BOUNDARY</p>
-        </div>
-        <div class="phase" id="phase-false">
-          <div class="fading-ember"></div><p class="false-copy">光が、消えた。</p><p class="false-sub">CONNECTION LOST</p>
-        </div>
-        <div class="phase" id="phase-revive">
-          <p class="revive-line" id="revive-line">まだ、終わらない。</p><div class="revive-beam"></div><div class="unity-sigil"><span>UNITY</span></div>
-        </div>
-        <div class="phase" id="phase-reveal">
-          <div class="reveal-rays"></div><div class="particle-burst" id="particle-burst"></div>
-          <div class="reward-card" id="reward-card"><div class="card-edge"></div><div class="card-face"><p class="card-overline">UNITY DROP</p><div class="card-symbol">U</div><p class="card-tier" id="card-tier">DROP</p><span class="card-line"></span><p class="card-message">A GIFT FROM OUR CONNECTION</p></div></div>
-          <p class="reveal-caption" id="reveal-caption">YOUR DROP</p>
-        </div>
-        <div class="cinema-flash" id="cinema-flash"></div><div class="grain"></div>
-      </div>
+    <section class="screen cinematic-screen" id="screen-opening" aria-label="DROP演出">
+      <button class="skip" id="btn-skip" type="button" aria-label="演出をスキップ">SKIP <span>›</span></button>
+      <video id="drop-video" muted playsinline webkit-playsinline preload="none" aria-label="ガチャ演出動画"></video>
     </section>
 
     <section class="screen result-screen" id="screen-result">
