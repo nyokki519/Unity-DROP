@@ -22,7 +22,8 @@
     <div id="status" class="status">待機中</div>
   </div>
   <script>
-    const sources={common:'assets/videos/common.mp4',rare:'assets/videos/rare.mp4',secret:'assets/videos/secret.mp4'};
+    const base='https://raw.githubusercontent.com/nyokki519/Unity-DROP/codex/video-player-final/assets/videos/';
+    const sources={common:base+'common.mp4',rare:base+'rare.mp4',secret:base+'secret.mp4'};
     const video=document.getElementById('video');
     const skip=document.getElementById('skip');
     const status=document.getElementById('status');
