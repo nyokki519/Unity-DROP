@@ -33,3 +33,13 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Smoke test event API
+        run: |
+          response=$(curl --fail-with-body --silent --show-error \
+            -X POST 'https://unity-drop-api.kukki519.workers.dev/api/event' \
+            -H 'Origin: https://nyokki519.github.io' \
+            -H 'Content-Type: application/json' \
+            --data '{}')
+          echo "$response"
+          node -e 'const x=JSON.parse(process.argv[1]); if (x.eventId !== 2026100402 || x.totalDraws !== 17) process.exit(1)' "$response"
