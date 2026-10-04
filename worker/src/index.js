@@ -17,6 +17,17 @@ function validateEventConfig(value) {
   return { eventId: value.eventId, totalDraws: value.totalDraws, inventory };
 }
 
+function currentJstEventId() {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(new Date());
+  const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
+  return Number(`${values.year}${values.month}${values.day}`);
+}
+
 function randomInteger(maximum) {
   const limit = Math.floor(0x100000000 / maximum) * maximum;
   const values = new Uint32Array(1);
@@ -66,7 +77,8 @@ function corsHeaders(request, env) {
 async function loadEventConfig(env) {
   const response = await fetch(env.CONFIG_URL, { cf: { cacheTtl: 15, cacheEverything: true } });
   if (!response.ok) throw new Error(`Config fetch failed: ${response.status}`);
-  return validateEventConfig(await response.json());
+  const config = validateEventConfig(await response.json());
+  return { ...config, eventId: currentJstEventId() };
 }
 
 export class EventPool {
@@ -171,4 +183,4 @@ export default {
   }
 };
 
-export { validateEventConfig, randomInteger };
+export { validateEventConfig, randomInteger, currentJstEventId };
