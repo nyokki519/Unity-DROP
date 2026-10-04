@@ -2,7 +2,7 @@
   "name": "unity-drop-api",
   "private": true,
   "type": "module",
-  "description": "Cloudflare Worker for Unity DROP",
+  "description": "Cloudflare Worker for Unity DROP.",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
