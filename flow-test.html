@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>UNITY DROP — Full Flow Test</title>
+<style>
+:root{--ivory:#f6f0e5;--espresso:#38271d;--terra:#b9694f;--sage:#879982;--serif:"Hiragino Mincho ProN","Yu Mincho",serif;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:var(--sans);background:var(--ivory);color:var(--espresso)}button{font:inherit}.screen{display:none;min-height:100dvh}.screen.active{display:flex}.landing{padding:24px;align-items:center;justify-content:center;background:radial-gradient(circle at 75% 18%,#e2d4c0 0,transparent 32%),linear-gradient(145deg,#f8f4eb,#eee5d7)}.wrap{width:min(430px,100%);text-align:center}.kicker{font-size:10px;letter-spacing:.28em;color:var(--terra);margin-bottom:24px}.landing h1{font:600 38px/1.45 var(--serif);margin:0 0 18px}.landing h1 strong{color:var(--terra)}.lead{font:500 13px/2 var(--serif);color:#796759}.drop{margin-top:30px;width:240px;height:78px;border:0;background:var(--espresso);color:#fff;box-shadow:0 18px 45px #38271d38;font-family:var(--serif);font-size:16px;letter-spacing:.12em}.note{margin-top:15px;font-size:10px;color:#8f7e70}.loading{align-items:center;justify-content:center;background:#090807;color:#fff;text-align:center}.spinner{width:36px;height:36px;border:2px solid #ffffff33;border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 18px}.loading p{font-size:12px;letter-spacing:.16em}.ready{align-items:center;justify-content:center;background:#090807;color:#fff;text-align:center;padding:30px}.ready h2{font:600 26px/1.5 var(--serif);margin:0 0 12px}.ready p{font-size:12px;color:#aaa;line-height:1.8}.play{margin-top:24px;border:1px solid #ffffff55;background:#fff;color:#111;padding:16px 26px;border-radius:999px;font-weight:700}.cinematic{position:fixed;inset:0;background:#000;color:#fff;overflow:hidden}.cinematic video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}.skip{position:absolute;right:max(18px,env(safe-area-inset-right));top:max(18px,env(safe-area-inset-top));z-index:2;border:1px solid #ffffff55;background:#0008;color:#fff;border-radius:999px;padding:10px 14px}.result{align-items:center;justify-content:center;padding:40px 20px;background:radial-gradient(circle at 50% 15%,#fff,#f5eee3 60%,#e8dac8);text-align:center}.result-card{position:relative;margin:24px auto;padding:46px 30px 38px;background:#fffdf9;border:1px solid #d5c4ad;box-shadow:0 28px 80px #5b402327}.result-card:before{content:"";position:absolute;inset:8px;border:1px solid #e9dfd0}.rarity{position:relative;color:var(--terra);font-size:9px;font-weight:700;letter-spacing:.28em}.result h2{position:relative;font:600 24px/1.55 var(--serif);margin:24px 0}.msg{position:relative;font:500 13px/1.9 var(--serif);color:#79695c}.thanks{font:500 13px/1.9 var(--serif);color:#655446}.again{margin-top:16px;border:1px solid #cbb8a2;background:transparent;color:#604c3e;padding:12px 18px}.debug{position:fixed;z-index:50;left:8px;bottom:8px;display:flex;gap:4px}.debug button{font-size:9px;padding:6px 8px;border:1px solid #0002;background:#ffffffdd;border-radius:999px}.debug button.on{background:#222;color:#fff}@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<section id="intro" class="screen landing active"><div class="wrap"><div class="kicker">SPECIAL GIFT FOR YOU</div><h1>つながりから生まれる、<br><strong>今日だけの光。</strong></h1><p class="lead">ひとつの出会いが、まだ見ぬ何かを連れてくる。<br>あなたのDROPを受け取ってください。</p><button id="open" class="drop">DROPをひらく</button><div class="note">※ テストページです。抽選API・在庫は消費しません。</div></div></section>
+<section id="loading" class="screen loading"><div><div class="spinner"></div><p>YOUR DROP IS BEING SELECTED...</p></div></section>
+<section id="ready" class="screen ready"><div><div class="kicker">YOUR DROP IS READY</div><h2>演出の準備ができました。</h2><p>下のボタンをタップすると、<br>音声付きで演出が始まります。</p><button id="play" class="play">▶ 演出を再生</button></div></section>
+<section id="cinematic" class="screen cinematic"><video id="video" playsinline webkit-playsinline preload="auto"></video><button id="skip" class="skip">SKIP ›</button></section>
+<section id="result" class="screen result"><div class="wrap"><div class="kicker">TODAY'S DROP</div><div class="result-card"><div id="rarity" class="rarity">STANDARD DROP</div><h2 id="title">リピーター会イベント 200円OFF</h2><p id="message" class="msg">次回のUnityイベントで使える特典です。スタッフにお伝えください。</p></div><p class="thanks">今日のつながりに、ありがとう。<br>またUnityで会いましょう。</p><button id="again" class="again">最初から確認する</button></div></section>
+<div class="debug"><button data-r="common" class="on">COMMON</button><button data-r="rare">RARE</button><button data-r="secret">SECRET</button></div>
+<script>
+const screens=['intro','loading','ready','cinematic','result'];
+const cfg={
+ common:{video:'assets/videos/secret.mp4',label:'STANDARD DROP',title:'リピーター会イベント 200円OFF',message:'次回のUnityイベントで使える特典です。スタッフにお伝えください。'},
+ rare:{video:'assets/videos/rare.mp4',label:'RARE DROP',title:'RARE DROP',message:'少し特別な特典です。内容はスタッフにお声がけください。'},
+ secret:{video:'assets/videos/common.mp4',label:'SECRET RARE',title:'SECRET RARE DROP',message:'おめでとうございます。特別なDROPです。内容はスタッフにお声がけください。'}
+};
+let rarity='common',done=false,timer;
+const $=id=>document.getElementById(id);
+function show(id){screens.forEach(s=>$(s).classList.toggle('active',s===id))}
+function render(){const x=cfg[rarity];$('rarity').textContent=x.label;$('title').textContent=x.title;$('message').textContent=x.message}
+function finish(){if(done)return;done=true;clearTimeout(timer);$('video').pause();$('video').removeAttribute('src');$('video').load();render();show('result')}
+document.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{rarity=b.dataset.r;document.querySelectorAll('[data-r]').forEach(x=>x.classList.toggle('on',x===b))});
+$('open').onclick=()=>{show('loading');setTimeout(()=>show('ready'),900)};
+$('play').onclick=async()=>{done=false;show('cinematic');const v=$('video');v.muted=false;v.defaultMuted=false;v.volume=1;v.playsInline=true;v.src=cfg[rarity].video;timer=setTimeout(finish,15000);try{await v.play()}catch(e){alert('音あり再生が拒否されました。iPhoneの消音モード・音量を確認して、もう一度お試しください。');show('ready')}};
+$('video').addEventListener('ended',finish);$('video').addEventListener('error',finish);$('skip').onclick=finish;$('again').onclick=()=>{show('intro')};
+</script>
+</body>
+</html>
