@@ -7,6 +7,8 @@ function json(data, status = 200, headers = {}) {
 
 function validateEventConfig(value) {
   if (!value || !Number.isSafeInteger(value.eventId) || value.eventId < 1) throw new Error("Invalid eventId");
+  const poolRevision = value.poolRevision == null ? 0 : value.poolRevision;
+  if (!Number.isSafeInteger(poolRevision) || poolRevision < 0 || poolRevision > 99) throw new Error("Invalid poolRevision");
   if (!Number.isSafeInteger(value.totalDraws) || value.totalDraws < 1) throw new Error("Invalid totalDraws");
   const inventory = {};
   for (const tier of TIERS) {
@@ -14,7 +16,7 @@ function validateEventConfig(value) {
     inventory[tier] = value.inventory[tier];
   }
   if (TIERS.reduce((sum, tier) => sum + inventory[tier], 0) !== value.totalDraws) throw new Error("Inventory must equal totalDraws");
-  return { eventId: value.eventId, totalDraws: value.totalDraws, inventory };
+  return { eventId: value.eventId, poolRevision, totalDraws: value.totalDraws, inventory };
 }
 
 function currentJstEventId() {
@@ -78,7 +80,8 @@ async function loadEventConfig(env) {
   const response = await fetch(env.CONFIG_URL, { cf: { cacheTtl: 15, cacheEverything: true } });
   if (!response.ok) throw new Error(`Config fetch failed: ${response.status}`);
   const config = validateEventConfig(await response.json());
-  return { ...config, eventId: currentJstEventId() };
+  const day = currentJstEventId();
+  return { ...config, eventId: day * 100 + config.poolRevision };
 }
 
 export class EventPool {

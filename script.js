@@ -8,13 +8,14 @@ const DROP_ITEMS = Object.freeze({
 (function () {
   "use strict";
   const $ = id => document.getElementById(id);
-  const screens = ["screen-intro", "screen-opening", "screen-result", "screen-already", "screen-fallback"];
+  const screens = ["screen-intro", "screen-ready", "screen-opening", "screen-result", "screen-already", "screen-fallback"];
   const VIDEO_SOURCES = Object.freeze({
-    common: "assets/videos/common.mp4",
+    common: "assets/videos/secret.mp4",
     rare: "assets/videos/rare.mp4",
-    secret: "assets/videos/secret.mp4"
+    secret: "assets/videos/common.mp4"
   });
   let opening = false;
+  let pendingItem = null;
 
   const API_URL = String(window.UNITY_DROP_API_URL || "").replace(/\/$/, "");
   const SESSION_KEY = "unityDropParticipantToken";
@@ -54,7 +55,6 @@ const DROP_ITEMS = Object.freeze({
       localStorage.setItem(REQUEST_KEY, requestId);
     }
 
-    /* Reusing requestId makes a retry safe when the first response was lost. */
     const result = await api("/api/draw", {
       headers: { authorization: `Bearer ${token}` },
       body: { requestId }
@@ -83,6 +83,7 @@ const DROP_ITEMS = Object.freeze({
     const video = $("drop-video");
     const source = VIDEO_SOURCES[item.rarity];
     const skip = $("btn-skip");
+    const sound = $("btn-sound");
     if (!video || !source) return Promise.resolve();
     showScreen("screen-opening");
     return new Promise(resolve => {
@@ -93,15 +94,22 @@ const DROP_ITEMS = Object.freeze({
         finished = true;
         clearTimeout(timer);
         skip?.removeEventListener("click", finish);
+        sound?.removeEventListener("click", enableSound);
         video.removeEventListener("ended", finish);
         video.removeEventListener("error", finish);
         video.removeEventListener("timeupdate", progress);
         video.pause();
         video.removeAttribute("src");
         video.load();
+        if (sound) sound.hidden = true;
         resolve();
       };
-      // A stalled download/playback must never hide an already awarded prize.
+      const enableSound = () => {
+        video.muted = false;
+        video.defaultMuted = false;
+        video.volume = 1;
+        if (sound) sound.hidden = true;
+      };
       const armWatchdog = () => {
         clearTimeout(timer);
         timer = setTimeout(finish, 15000);
@@ -114,55 +122,107 @@ const DROP_ITEMS = Object.freeze({
         }
       };
       skip?.addEventListener("click", finish);
+      sound?.addEventListener("click", enableSound);
       video.addEventListener("ended", finish);
       video.addEventListener("error", finish);
       video.addEventListener("timeupdate", progress);
-      video.muted = true;
-      video.defaultMuted = true;
+      if (sound) sound.hidden = true;
+      video.muted = false;
+      video.defaultMuted = false;
+      video.volume = 1;
       video.playsInline = true;
       video.loop = false;
       video.src = source;
       armWatchdog();
-      try { Promise.resolve(video.play()).catch(finish); }
-      catch (_) { finish(); }
+      try {
+        Promise.resolve(video.play()).catch(async () => {
+          video.muted = true;
+          video.defaultMuted = true;
+          if (sound) sound.hidden = false;
+          try { await video.play(); }
+          catch (_) { finish(); }
+        });
+      } catch (_) {
+        video.muted = true;
+        video.defaultMuted = true;
+        if (sound) sound.hidden = false;
+        try { Promise.resolve(video.play()).catch(finish); }
+        catch (_) { finish(); }
+      }
     });
   }
 
   function render(prefix, item) {
     $(`${prefix}-title`).textContent = String(item.title || "");
     $(`${prefix}-message`).textContent = String(item.message || "");
-    const rarity = $(`${prefix}-rarity-label`); rarity.textContent = item.rarity === "common" ? "STANDARD DROP" : tierLabel(item.rarity); rarity.dataset.rarity = item.rarity || "common";
+    const rarity = $(`${prefix}-rarity-label`);
+    rarity.textContent = item.rarity === "common" ? "STANDARD DROP" : tierLabel(item.rarity);
+    rarity.dataset.rarity = item.rarity || "common";
     $(`${prefix}-expiration`).textContent = item.expiresAt ? `有効期限  ${item.expiresAt}` : "";
   }
 
   async function openDrop() {
     if (opening) return;
     opening = true;
-    let item;
-    try { item = await requestServerDraw(); }
-    catch (error) {
+    try {
+      const item = await requestServerDraw();
+      item.expiresAt = expirationDate();
+      try { localStorage.setItem(RESULT_KEY, JSON.stringify(item)); }
+      catch (error) { console.warn("UNITY DROP result cache error:", error); }
+      pendingItem = item;
+      showScreen("screen-ready");
+    } catch (error) {
       console.error("UNITY DROP backend draw error:", error);
+      opening = false;
       if (error.message === "pool_exhausted") return fallback("今回のDROPはすべて終了しました。ご参加ありがとうございました。");
+      if (error.message === "config_snapshot_mismatch") return fallback("本日のDROP設定を更新中です。少し時間をおいて、もう一度お試しください。");
       return fallback("通信が安定してから、もう一度お試しください。同じ抽選IDで安全に再開します。");
     }
-    item.expiresAt = expirationDate();
-    try { localStorage.setItem(RESULT_KEY, JSON.stringify(item)); }
-    catch (error) { console.warn("UNITY DROP result cache error:", error); }
+  }
+
+  async function receiveDrop() {
+    if (!pendingItem) return;
+    const button = $("btn-receive");
+    if (button) button.disabled = true;
+    const item = pendingItem;
     try { await cinematic(item); }
     catch (error) { console.error("UNITY DROP presentation error:", error); }
     render("result", item);
     showScreen("screen-result");
+    pendingItem = null;
+    opening = false;
   }
 
-  function fallback(message) { $("fallback-message").textContent = message; showScreen("screen-fallback"); }
+  function fallback(message) {
+    $("fallback-message").textContent = message;
+    showScreen("screen-fallback");
+  }
+
   async function init() {
-    $("btn-open").addEventListener("click", event => { event.currentTarget.disabled = true; openDrop(); }, { once: true });
-    $("btn-share").addEventListener("click", async () => { const data = { title: "UNITY DROP", text: "UNITY DROPを受け取りました。", url: location.href }; try { if (navigator.share) await navigator.share(data); else await navigator.clipboard.writeText(location.href); } catch (_) {} });
+    $("btn-open").addEventListener("click", event => {
+      event.currentTarget.disabled = true;
+      openDrop();
+    }, { once: true });
+    $("btn-receive").addEventListener("click", receiveDrop);
+    $("btn-share").addEventListener("click", async () => {
+      const data = { title: "UNITY DROP", text: "UNITY DROPを受け取りました。", url: location.href };
+      try {
+        if (navigator.share) await navigator.share(data);
+        else await navigator.clipboard.writeText(location.href);
+      } catch (_) {}
+    });
     try {
       const [event, saved] = await Promise.all([api("/api/event"), Promise.resolve(JSON.parse(localStorage.getItem(RESULT_KEY) || "null"))]);
-      if (saved?.title && saved.eventId === event.eventId) { render("already", saved); showScreen("screen-already"); }
-      else showScreen("screen-intro");
-    } catch (_) { showScreen("screen-intro"); }
+      if (saved?.title && saved.eventId === event.eventId) {
+        render("already", saved);
+        showScreen("screen-already");
+      } else {
+        showScreen("screen-intro");
+      }
+    } catch (_) {
+      showScreen("screen-intro");
+    }
   }
+
   document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", init) : init();
 })();
