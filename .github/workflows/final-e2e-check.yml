@@ -1,0 +1,62 @@
+name: Final Production E2E Check
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/final-e2e-check.yml"
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Playwright
+        run: |
+          npm init -y
+          npm install playwright
+          npx playwright install --with-deps chromium
+
+      - name: Run one production draw through UI
+        run: |
+          cat > /tmp/e2e.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          const browser = await chromium.launch({ headless: true });
+          const page = await browser.newPage();
+          const messages = [];
+          page.on('console', m => messages.push(`console:${m.type()}:${m.text()}`));
+          page.on('pageerror', e => messages.push(`pageerror:${e.message}`));
+          await page.goto('https://nyokki519.github.io/Unity-DROP/', { waitUntil: 'networkidle', timeout: 60000 });
+          await page.locator('#btn-open').click();
+          await page.locator('#screen-ready.is-active').waitFor({ state: 'visible', timeout: 30000 });
+          const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('unityDropLastResult') || 'null'));
+          if (!stored?.rarity || !stored?.title || !stored?.eventId) throw new Error('draw result was not saved');
+          console.log('DRAW_RESULT', JSON.stringify({ rarity: stored.rarity, title: stored.title, eventId: stored.eventId, drawRequestId: stored.drawRequestId }));
+          await page.locator('#btn-receive').click();
+          try {
+            await page.locator('#screen-result.is-active').waitFor({ state: 'visible', timeout: 25000 });
+          } catch (e) {
+            const skip = page.locator('#btn-skip');
+            if (await skip.count()) await skip.click().catch(() => {});
+            await page.locator('#screen-result.is-active').waitFor({ state: 'visible', timeout: 5000 });
+          }
+          const result = {
+            title: await page.locator('#result-title').innerText(),
+            message: await page.locator('#result-message').innerText(),
+            rarityLabel: await page.locator('#result-rarity-label').innerText(),
+            expiration: await page.locator('#result-expiration').innerText()
+          };
+          console.log('RESULT_SCREEN', JSON.stringify(result));
+          if (!result.title || !result.rarityLabel) throw new Error('result screen did not render');
+          if (messages.length) console.log('BROWSER_MESSAGES', JSON.stringify(messages));
+          await browser.close();
+          EOF
+          node /tmp/e2e.mjs
