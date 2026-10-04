@@ -34,7 +34,8 @@
 
     <section class="screen cinematic-screen" id="screen-opening" aria-label="DROP演出">
       <button class="skip" id="btn-skip" type="button" aria-label="演出をスキップ">SKIP <span>›</span></button>
-      <video id="drop-video" muted playsinline webkit-playsinline preload="none" aria-label="ガチャ演出動画"></video>
+      <button class="skip" id="btn-sound" type="button" hidden aria-label="音声をオン" style="right:auto;left:max(20px,env(safe-area-inset-left));">SOUND ON</button>
+      <video id="drop-video" playsinline webkit-playsinline preload="none" aria-label="ガチャ演出動画"></video>
     </section>
 
     <section class="screen result-screen" id="screen-result">
