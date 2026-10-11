@@ -24,6 +24,7 @@ const DROP_ITEMS = Object.freeze({
   ]);
   let opening = false;
   let pendingItem = null;
+  let displayedItem = null;
 
   const API_URL = String(window.UNITY_DROP_API_URL || "").replace(/\/$/, "");
   const SESSION_KEY = "unityDropParticipantToken";
@@ -176,6 +177,7 @@ const DROP_ITEMS = Object.freeze({
   }
 
   function render(prefix, item) {
+    displayedItem = item;
     $(`${prefix}-title`).textContent = String(item.title || "");
     $(`${prefix}-message`).textContent = String(item.message || "");
     const rarity = $(`${prefix}-rarity-label`);
@@ -221,19 +223,65 @@ const DROP_ITEMS = Object.freeze({
     showScreen("screen-fallback");
   }
 
+  function saveResultImage() {
+    if (!displayedItem) return;
+    const item = displayedItem;
+    const canvas = document.createElement("canvas");
+    canvas.width = 1080;
+    canvas.height = 1350;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.fillStyle = "#f6f0e5";
+    ctx.fillRect(0, 0, 1080, 1350);
+    ctx.fillStyle = "#fffdf9";
+    ctx.fillRect(60, 60, 960, 1230);
+    ctx.strokeStyle = "#c6a576";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(80, 80, 920, 1190);
+    ctx.textAlign = "center";
+    const text = (value, y, size, color = "#38271d", serif = false) => {
+      ctx.fillStyle = color;
+      ctx.font = `${size}px ${serif ? '"Shippori Mincho", serif' : '"DM Sans", sans-serif'}`;
+      ctx.fillText(value, 540, y);
+    };
+    const wrapped = (value, y, size, lineHeight, color) => {
+      ctx.font = `${size}px "Shippori Mincho", serif`;
+      let line = "";
+      for (const character of String(value || "").match(/[A-Za-z0-9]+|[^A-Za-z0-9]/gu) || []) {
+        if (character === "\n" || (line && ctx.measureText(line + character).width > 760)) {
+          text(line, y, size, color, true);
+          y += lineHeight;
+          line = character === "\n" ? "" : character;
+        } else line += character;
+      }
+      if (line) text(line, y, size, color, true);
+      return y + lineHeight;
+    };
+    const logo = document.querySelector(".nav-logo");
+    if (logo?.complete && logo.naturalWidth) ctx.drawImage(logo, 480, 140, 120, 120);
+    text("UNITY DROP", 330, 38);
+    text("TODAY’S CONNECTION", 380, 18, "#8d765d");
+    text(item.rarity === "common" ? "STANDARD DROP" : tierLabel(item.rarity), 490, 24, "#a47742");
+    let y = wrapped(item.title, 600, 46, 70, "#38271d");
+    y = wrapped(item.message, y + 65, 30, 52, "#79695c");
+    if (item.expiresAt) text(`有効期限  ${item.expiresAt}`, Math.max(1010, y + 35), 28, "#79695c", true);
+    text("今日のつながりに、ありがとう。", 1160, 28, "#79695c", true);
+    const link = document.createElement("a");
+    link.download = `UNITY-DROP-${item.eventId || "result"}.png`;
+    link.href = canvas.toDataURL("image/png");
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  }
+
   async function init() {
     $("btn-open").addEventListener("click", event => {
       event.currentTarget.disabled = true;
       openDrop();
     }, { once: true });
     $("btn-receive").addEventListener("click", receiveDrop);
-    $("btn-share").addEventListener("click", async () => {
-      const data = { title: "UNITY DROP", text: "UNITY DROPを受け取りました。", url: location.href };
-      try {
-        if (navigator.share) await navigator.share(data);
-        else await navigator.clipboard.writeText(location.href);
-      } catch (_) {}
-    });
+    $("btn-save-image").addEventListener("click", saveResultImage);
+    $("btn-save-already").addEventListener("click", saveResultImage);
     try {
       const [event, saved] = await Promise.all([api("/api/event"), Promise.resolve(JSON.parse(localStorage.getItem(RESULT_KEY) || "null"))]);
       if (saved?.title && saved.eventId === event.eventId) {
