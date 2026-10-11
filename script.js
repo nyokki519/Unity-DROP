@@ -9,11 +9,19 @@ const DROP_ITEMS = Object.freeze({
   "use strict";
   const $ = id => document.getElementById(id);
   const screens = ["screen-intro", "screen-ready", "screen-opening", "screen-result", "screen-already", "screen-fallback"];
+  // Preserve the existing tier-specific presentation mapping.
   const VIDEO_SOURCES = Object.freeze({
     common: "assets/videos/secret.mp4",
     rare: "assets/videos/rare.mp4",
     secret: "assets/videos/common.mp4"
   });
+  const SHARED_VIDEO_SOURCES = Object.freeze([
+    "assets/videos/effects/effect-01.mp4",
+    "assets/videos/effects/effect-02.mp4",
+    "assets/videos/effects/effect-03.mp4",
+    "assets/videos/effects/effect-04.mp4",
+    "assets/videos/effects/effect-05.mp4"
+  ]);
   let opening = false;
   let pendingItem = null;
 
@@ -95,7 +103,8 @@ const DROP_ITEMS = Object.freeze({
 
   function cinematic(item) {
     const video = $("drop-video");
-    const source = VIDEO_SOURCES[item.rarity];
+    const sources = [VIDEO_SOURCES[item.rarity], ...SHARED_VIDEO_SOURCES];
+    const source = sources[Math.floor(Math.random() * sources.length)];
     const skip = $("btn-skip");
     const sound = $("btn-sound");
     if (!video || !source) return Promise.resolve();
