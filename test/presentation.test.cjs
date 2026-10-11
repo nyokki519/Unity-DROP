@@ -11,7 +11,7 @@ const sharedSources = Array.from({length:5},(_,i)=>`effects/effect-0${i+1}.mp4`)
    return elements.get(id);
   }
   const math=Object.create(Math);math.random=()=>(index+0.5)/6;
-  const context={Math:math,console,setTimeout,clearTimeout,queueMicrotask,Date,Promise,crypto:{randomUUID:()=> 'request-uuid'},window:{UNITY_DROP_API_URL:'http://mock'},document:{readyState:'complete',getElementById:element,body:{classList:{toggle(){}}}},localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)},fetch:async url=>({ok:true,json:async()=>url.endsWith('/event')?{eventId:1}:url.endsWith('/session')?{token:'token'}:{rarity,event_id:1,request_id:'request-uuid',drawn_at:'now'}})};
+  const context={navigator:{userAgent:"test"},Math:math,console,setTimeout,clearTimeout,queueMicrotask,Date,Promise,crypto:{randomUUID:()=> 'request-uuid'},window:{UNITY_DROP_API_URL:'http://mock'},document:{readyState:'complete',getElementById:element,body:{classList:{toggle(){}}}},localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)},fetch:async url=>({ok:true,json:async()=>url.endsWith('/event')?{eventId:1}:url.endsWith('/session')?{token:'token'}:{rarity,event_id:1,request_id:'request-uuid',drawn_at:'now'}})};
   vm.runInNewContext(fs.readFileSync('script.js','utf8'),context);
   await new Promise(r=>setImmediate(r));
   element('btn-open').handlers.click({currentTarget:element('btn-open')});

@@ -223,7 +223,12 @@ const DROP_ITEMS = Object.freeze({
     showScreen("screen-fallback");
   }
 
-  function saveResultImage() {
+  function isAppleMobile() {
+    return /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  }
+
+  async function saveResultImage() {
     if (!displayedItem) return;
     const item = displayedItem;
     const canvas = document.createElement("canvas");
@@ -266,9 +271,26 @@ const DROP_ITEMS = Object.freeze({
     y = wrapped(item.message, y + 65, 30, 52, "#79695c");
     if (item.expiresAt) text(`有効期限  ${item.expiresAt}`, Math.max(1010, y + 35), 28, "#79695c", true);
     text("今日のつながりに、ありがとう。", 1160, 28, "#79695c", true);
+    const filename = `UNITY-DROP-${item.eventId || "result"}.png`;
+    const imageUrl = canvas.toDataURL("image/png");
+    // Build the File synchronously to retain the tap's user activation on Safari.
+    if (isAppleMobile() && typeof navigator.canShare === "function" && typeof navigator.share === "function") {
+      try {
+        const binary = atob(imageUrl.split(",")[1]);
+        const bytes = Uint8Array.from(binary, character => character.charCodeAt(0));
+        const file = new File([bytes], filename, { type: "image/png" });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: "UNITY DROP" });
+          return;
+        }
+      } catch (error) {
+        if (error.name === "AbortError") return;
+        console.warn("UNITY DROP image sharing unavailable:", error);
+      }
+    }
     const link = document.createElement("a");
-    link.download = `UNITY-DROP-${item.eventId || "result"}.png`;
-    link.href = canvas.toDataURL("image/png");
+    link.download = filename;
+    link.href = imageUrl;
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -282,6 +304,9 @@ const DROP_ITEMS = Object.freeze({
     $("btn-receive").addEventListener("click", receiveDrop);
     $("btn-save-image").addEventListener("click", saveResultImage);
     $("btn-save-already").addEventListener("click", saveResultImage);
+    if (isAppleMobile() && typeof navigator.canShare === "function" && typeof navigator.share === "function") {
+      document.querySelectorAll(".save-help").forEach(note => { note.hidden = false; });
+    }
     try {
       const [event, saved] = await Promise.all([api("/api/event"), Promise.resolve(JSON.parse(localStorage.getItem(RESULT_KEY) || "null"))]);
       if (saved?.title && saved.eventId === event.eventId) {
