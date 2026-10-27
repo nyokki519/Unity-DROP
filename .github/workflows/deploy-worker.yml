@@ -40,13 +40,23 @@ jobs:
 
       - name: Smoke test event API
         run: |
-          response=$(curl --fail-with-body --silent --show-error \
-            -X POST 'https://unity-drop-api.kukki519.workers.dev/api/event' \
-            -H 'Origin: https://nyokki519.github.io' \
-            -H 'Content-Type: application/json' \
-            --data '{}')
-          echo "$response"
-          node --input-type=module -e 'import {currentJstEventId} from "./src/index.js"; const x=JSON.parse(process.argv[1]); if (Math.floor(x.eventId/100) !== currentJstEventId() || !Number.isSafeInteger(x.totalDraws) || x.totalDraws<1 || x.configVersion!==3) process.exit(1)' "$response"
+          # Worker routing propagation can briefly return the previous deployment.
+          for attempt in 1 2 3 4 5; do
+            response=$(curl --fail-with-body --silent --show-error --max-time 20 \
+              -X POST 'https://unity-drop-api.kukki519.workers.dev/api/event' \
+              -H 'Origin: https://nyokki519.github.io' \
+              -H 'Content-Type: application/json' \
+              --data '{}') || response='{"error":"connection_failed"}'
+            if node --input-type=module -e 'import {currentJstEventId} from "./src/index.js"; const x=JSON.parse(process.argv[1]); if (Math.floor(x.eventId/100) !== currentJstEventId() || !Number.isSafeInteger(x.totalDraws) || x.totalDraws<1 || x.configVersion!==3) process.exit(1)' "$response"; then
+              echo "$response"
+              exit 0
+            fi
+            if [ "$attempt" = 5 ]; then
+              echo "::error::DROP event verification failed: $response"
+              exit 1
+            fi
+            sleep 5
+          done
 
       - name: Smoke test session API
         run: |
