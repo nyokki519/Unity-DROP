@@ -4,7 +4,7 @@ compatibility_date = "2026-09-01"
 keep_vars = true
 
 [vars]
-# Published raw URL of this repository's drop-config.json.
+# Initial defaults before the first authenticated settings update.
 CONFIG_URL = "https://raw.githubusercontent.com/nyokki519/Unity-DROP/main/drop-config.json"
 ALLOWED_ORIGINS = "https://nyokki519.github.io,http://localhost:4173"
 
@@ -15,3 +15,11 @@ class_name = "EventPool"
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["EventPool"]
+
+[[durable_objects.bindings]]
+name = "DROP_SETTINGS"
+class_name = "DropSettings"
+
+[[migrations]]
+tag = "v2-drop-settings"
+new_sqlite_classes = ["DropSettings"]

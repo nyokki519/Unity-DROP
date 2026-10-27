@@ -1,33 +1,10 @@
+import {validateEventConfig,currentJstEventId} from "./config.js";
+import {DropSettings} from "./settings.js";
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8" };
 const TIERS = ["secret", "rare", "common"];
 
 function json(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), { status, headers: { ...JSON_HEADERS, ...headers } });
-}
-
-function validateEventConfig(value) {
-  if (!value || !Number.isSafeInteger(value.eventId) || value.eventId < 1) throw new Error("Invalid eventId");
-  const poolRevision = value.poolRevision == null ? 0 : value.poolRevision;
-  if (!Number.isSafeInteger(poolRevision) || poolRevision < 0 || poolRevision > 99) throw new Error("Invalid poolRevision");
-  if (!Number.isSafeInteger(value.totalDraws) || value.totalDraws < 1) throw new Error("Invalid totalDraws");
-  const inventory = {};
-  for (const tier of TIERS) {
-    if (!Number.isSafeInteger(value.inventory?.[tier]) || value.inventory[tier] < 0) throw new Error(`Invalid ${tier} inventory`);
-    inventory[tier] = value.inventory[tier];
-  }
-  if (TIERS.reduce((sum, tier) => sum + inventory[tier], 0) !== value.totalDraws) throw new Error("Inventory must equal totalDraws");
-  return { eventId: value.eventId, poolRevision, totalDraws: value.totalDraws, inventory };
-}
-
-function currentJstEventId() {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Tokyo",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
-  }).formatToParts(new Date());
-  const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
-  return Number(`${values.year}${values.month}${values.day}`);
 }
 
 function randomInteger(maximum) {
@@ -76,13 +53,6 @@ function corsHeaders(request, env) {
   } : null;
 }
 
-async function loadEventConfig(env) {
-  const response = await fetch(env.CONFIG_URL, { cf: { cacheTtl: 15, cacheEverything: true } });
-  if (!response.ok) throw new Error(`Config fetch failed: ${response.status}`);
-  const config = validateEventConfig(await response.json());
-  const day = currentJstEventId();
-  return { ...config, eventId: day * 100 + config.poolRevision };
-}
 
 export class EventPool {
   constructor(ctx) {
@@ -96,6 +66,7 @@ export class EventPool {
         common_initial INTEGER NOT NULL, common_remaining INTEGER NOT NULL,
         state TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
       )`);
+      this.sql.exec(`CREATE TABLE IF NOT EXISTS managed_config (id INTEGER PRIMARY KEY, operation_id TEXT NOT NULL, config TEXT NOT NULL)`);
       this.sql.exec(`CREATE TABLE IF NOT EXISTS draws (
         request_id TEXT PRIMARY KEY, user_id TEXT NOT NULL UNIQUE, event_id INTEGER NOT NULL,
         rarity TEXT NOT NULL, drawn_at TEXT NOT NULL
@@ -105,8 +76,38 @@ export class EventPool {
 
   async fetch(request) {
     if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405);
-    const { config, requestId, userId } = await request.json();
-    const safeConfig = validateEventConfig(config);
+    const input = await request.json();
+    const {config,requestId,userId}=input;
+    let safeConfig = validateEventConfig(config);
+    const path=new URL(request.url).pathname;
+    if(path==="/status"||path==="/configure"){
+      try{return json(this.ctx.storage.transactionSync(()=>{
+        const pool=[...this.sql.exec("SELECT * FROM pool WHERE event_id = ?",safeConfig.eventId)][0];
+        const managed=[...this.sql.exec("SELECT * FROM managed_config WHERE id=1")][0];
+        if(path==="/configure"){
+          if(typeof input.operationId!=="string"||! /^[0-9a-f-]{36}$/i.test(input.operationId))throw Error("INVALID_CONFIG");
+          if(managed?.operation_id!==input.operationId){
+            const drawn=pool?{secret:pool.secret_initial-pool.secret_remaining,rare:pool.rare_initial-pool.rare_remaining,common:pool.common_initial-pool.common_remaining}:{secret:0,rare:0,common:0};
+            if(TIERS.some(t=>safeConfig.inventory[t]<drawn[t]))throw Error("BELOW_DRAWN");
+            const remaining=safeConfig.totalDraws-TIERS.reduce((n,t)=>n+drawn[t],0),now=new Date().toISOString();
+            this.sql.exec(`INSERT INTO pool VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              ON CONFLICT(event_id) DO UPDATE SET initial_total=excluded.initial_total,remaining_total=excluded.remaining_total,
+              secret_initial=excluded.secret_initial,secret_remaining=excluded.secret_remaining,rare_initial=excluded.rare_initial,rare_remaining=excluded.rare_remaining,
+              common_initial=excluded.common_initial,common_remaining=excluded.common_remaining,state=excluded.state,updated_at=excluded.updated_at`,
+              safeConfig.eventId,safeConfig.totalDraws,remaining,safeConfig.inventory.secret,safeConfig.inventory.secret-drawn.secret,safeConfig.inventory.rare,safeConfig.inventory.rare-drawn.rare,safeConfig.inventory.common,safeConfig.inventory.common-drawn.common,remaining===0?"exhausted":"active",now,now);
+            this.sql.exec("INSERT INTO managed_config VALUES(1,?,?) ON CONFLICT(id) DO UPDATE SET operation_id=excluded.operation_id,config=excluded.config",input.operationId,JSON.stringify(safeConfig));
+          }
+        }
+        const active=[...this.sql.exec("SELECT * FROM pool WHERE event_id = ?",safeConfig.eventId)][0];
+        return {eventId:safeConfig.eventId,totalDraws:active?.initial_total??safeConfig.totalDraws,
+          inventory:active?{secret:active.secret_initial,rare:active.rare_initial,common:active.common_initial}:safeConfig.inventory,
+          remaining:active?{secret:active.secret_remaining,rare:active.rare_remaining,common:active.common_remaining,total:active.remaining_total}:{...safeConfig.inventory,total:safeConfig.totalDraws},
+          drawn:active?{secret:active.secret_initial-active.secret_remaining,rare:active.rare_initial-active.rare_remaining,common:active.common_initial-active.common_remaining,total:active.initial_total-active.remaining_total}:{secret:0,rare:0,common:0,total:0},initialized:Boolean(active)};
+      }));}catch(e){return json({error:e.message==="BELOW_DRAWN"?"counts_below_drawn":"invalid_config"},e.message==="BELOW_DRAWN"?409:400);}
+    }
+    const managed=[...this.sql.exec("SELECT * FROM managed_config WHERE id=1")][0];
+    if(managed&&JSON.parse(managed.config).eventId!==safeConfig.eventId)return json({error:"event_mismatch"},409);
+    if(managed)safeConfig=validateEventConfig(JSON.parse(managed.config));
     if (!/^[0-9a-f-]{36}$/i.test(requestId) || !/^[0-9a-f-]{36}$/i.test(userId)) return json({ error: "invalid_request" }, 400);
     try {
       const result = this.ctx.storage.transactionSync(() => {
@@ -151,39 +152,57 @@ export class EventPool {
   }
 }
 
+async function adminAuthorized(request,env){
+  const key=env.DROP_ADMIN_TOKEN;
+  if(typeof key!=="string"||key.length<32)return false;
+  const actual=request.headers.get("authorization")??"";
+  if(actual.length>1024)return false;
+  const hash=async value=>new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(value)));
+  const [a,b]=await Promise.all([hash(actual),hash("Bearer "+key)]);let difference=0;for(let i=0;i<a.length;i++)difference|=a[i]^b[i];return difference===0;
+}
+async function adminBody(request){
+  if(Number(request.headers.get("content-length"))>2048)throw Error("body_too_large");
+  const reader=request.body?.getReader();if(!reader)throw Error("invalid_json");let size=0;const chunks=[];
+  try{while(true){const part=await reader.read();if(part.done)break;size+=part.value.length;if(size>2048){await reader.cancel();throw Error("body_too_large");}chunks.push(part.value);}}finally{reader.releaseLock();}
+  const bytes=new Uint8Array(size);let offset=0;for(const c of chunks){bytes.set(c,offset);offset+=c.length;}return JSON.parse(new TextDecoder().decode(bytes));
+}
+function settings(env){return env.DROP_SETTINGS.get(env.DROP_SETTINGS.idFromName("settings"));}
 export default {
-  async fetch(request, env) {
-    const cors = corsHeaders(request, env);
-    if (!cors) return json({ error: "origin_not_allowed" }, 403);
-    if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
-    const url = new URL(request.url);
-
-    try {
-      if (url.pathname === "/api/session" && request.method === "POST") {
-        if (!env.SESSION_SECRET) return json({ error: "server_not_configured" }, 503, cors);
-        return json({ token: await createParticipantToken(env.SESSION_SECRET) }, 201, cors);
-      }
-      if (url.pathname === "/api/event" && request.method === "POST") {
-        const config = await loadEventConfig(env);
-        return json({ eventId: config.eventId, totalDraws: config.totalDraws }, 200, cors);
-      }
-      if (url.pathname === "/api/draw" && request.method === "POST") {
-        if (!env.SESSION_SECRET) return json({ error: "server_not_configured" }, 503, cors);
-        const userId = await participantIdFromToken(request.headers.get("authorization")?.replace(/^Bearer /, ""), env.SESSION_SECRET);
-        if (!userId) return json({ error: "unauthorized" }, 401, cors);
-        const body = await request.json();
-        if (!/^[0-9a-f-]{36}$/i.test(body.requestId)) return json({ error: "invalid_request" }, 400, cors);
-        const config = await loadEventConfig(env);
-        const object = env.EVENT_POOLS.get(env.EVENT_POOLS.idFromName(String(config.eventId)));
-        const response = await object.fetch("https://pool.internal/draw", { method: "POST", body: JSON.stringify({ config, requestId: body.requestId, userId }) });
-        return new Response(response.body, { status: response.status, headers: { ...JSON_HEADERS, ...cors, "cache-control": "no-store" } });
-      }
-      return json({ error: "not_found" }, 404, cors);
-    } catch (error) {
-      console.error(error);
-      return json({ error: "internal_error" }, 500, cors);
-    }
+ async fetch(request,env){
+  const url=new URL(request.url);
+  if(url.pathname==="/api/admin/config"){
+   if(!await adminAuthorized(request,env))return json({error:"unauthorized"},401,{"cache-control":"no-store"});
+   if(!["GET","POST"].includes(request.method))return json({error:"method_not_allowed"},405);
+   if(!env.DROP_SETTINGS)return json({error:"settings_unavailable"},503);
+   try{
+    const body=request.method==="POST"?await adminBody(request):{};
+    return await settings(env).fetch("https://settings.internal/"+(request.method==="POST"?"update":"state"),{method:"POST",body:JSON.stringify(body)});
+   }catch(e){return json({error:e.message==="body_too_large"?"body_too_large":e instanceof SyntaxError?"invalid_json":"settings_apply_unknown"},e.message==="body_too_large"?413:e instanceof SyntaxError?400:503,{"cache-control":"no-store"});}
   }
+  const cors=corsHeaders(request,env);
+  if(!cors)return json({error:"origin_not_allowed"},403);
+  if(request.method==="OPTIONS")return new Response(null,{status:204,headers:cors});
+  try{
+   if(url.pathname==="/api/session"&&request.method==="POST"){
+    if(!env.SESSION_SECRET)return json({error:"server_not_configured"},503,cors);
+    return json({token:await createParticipantToken(env.SESSION_SECRET)},201,cors);
+   }
+   if(!env.DROP_SETTINGS)return json({error:"settings_unavailable"},503,cors);
+   if(url.pathname==="/api/event"&&request.method==="POST"){
+    const r=await settings(env).fetch("https://settings.internal/state",{method:"POST",body:"{}"});
+    if(!r.ok)return json({error:"settings_unavailable"},503,cors);
+    const data=await r.json();return json({eventId:data.eventId,totalDraws:data.current.totalDraws,inventory:data.current.inventory,configVersion:3,adminConfigured:typeof env.DROP_ADMIN_TOKEN==="string"&&env.DROP_ADMIN_TOKEN.length>=32},200,{...cors,"cache-control":"no-store"});
+   }
+   if(url.pathname==="/api/draw"&&request.method==="POST"){
+    if(!env.SESSION_SECRET)return json({error:"server_not_configured"},503,cors);
+    const userId=await participantIdFromToken(request.headers.get("authorization")?.replace(/^Bearer /,""),env.SESSION_SECRET);
+    if(!userId)return json({error:"unauthorized"},401,cors);
+    const body=await request.json();if(!/^[0-9a-f-]{36}$/i.test(body.requestId))return json({error:"invalid_request"},400,cors);
+    const r=await settings(env).fetch("https://settings.internal/draw",{method:"POST",body:JSON.stringify({requestId:body.requestId,userId})});
+    return new Response(r.body,{status:r.status,headers:{...JSON_HEADERS,...cors,"cache-control":"no-store"}});
+   }
+   return json({error:"not_found"},404,cors);
+  }catch{return json({error:"internal_error"},500,{...cors,"cache-control":"no-store"});}
+ }
 };
-
-export { validateEventConfig, randomInteger, currentJstEventId };
+export {validateEventConfig,randomInteger,currentJstEventId,DropSettings};

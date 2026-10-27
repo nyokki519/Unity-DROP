@@ -2,28 +2,23 @@
 
 Unity DROPは、GitHub Pagesの演出フロントエンドとCloudflare Worker + Durable Objectの共有有限在庫APIで構成されています。抽選結果は必ずサーバーで確定・保存されてから演出へ渡されます。
 
-## 運営：次回イベントの設定
+## 運営：抽選設定を即時変更
 
-イベントごとに編集するファイルは **`drop-config.json`だけ** です。
+Unity Analyticsの設定 → Unity DROP 抽選設定から、母数・レア・シークレットレアの総本数を変更できる。通常枠は差引き。管理者による確認保存で、当日の未抽選在庫へ即時反映し、翌日以降の既定値も更新する。
 
-```json
-{
-  "eventId": 20261004,
-  "totalDraws": 30,
-  "inventory": {
-    "secret": 1,
-    "rare": 5,
-    "common": 24
-  }
-}
-```
+抽選済みの当選結果と1人1回（匿名ブラウザセッション単位）の制限は維持する。各レアリティの総本数を既に当選した本数より少なくする変更は409で拒否する。使い切った在庫の増枠も同じ仕組みで行える。リセットや既存当選の削除はしない。
 
-1. `eventId`を未使用の数字へ変更します。
-2. `totalDraws`を参加総数へ変更します。
-3. 各レアリティの本数を変更します。3本数の合計は`totalDraws`と一致させます。
-4. GitHubへ反映します。新しい`eventId`への最初の抽選時に、バックエンドが設定を検証してPoolのスナップショットを作成します。
+初回の管理保存前だけ、drop-config.jsonが初期既定値になる。保存後の正本は新しいDropSettings Durable Object。従来EventPoolの名前・SQL・drawsを引き継ぎ、managed_configテーブルを追加して既存の結果を保持する。保存後にGitHubの初期値を編集しても管理設定は上書きされない。
 
-開始済みPoolと同じ`eventId`の本数を後から書き換えるとAPIは`config_snapshot_mismatch`で停止します。途中在庫が別構成に変わることはありません。修正イベントを開始する場合は新しい`eventId`を使用してください。
+### 接続設定
+
+専用の推測困難な32文字以上の `DROP_ADMIN_TOKEN` をCloudflare WorkerとAnalyticsのVercel環境に同じ値で設定する。既存SESSION_SECRET/CRON_SECRETは流用・変更しない。Workerは `npx wrangler secret put DROP_ADMIN_TOKEN`、AnalyticsはVercel Productionの環境変数へ追加して再デプロイする。キーをGitやチャットへ貼らない。設定未完了でも通常抽選は従来値で動作し、Analyticsの編集は無効になる。
+
+`GET/POST /api/admin/config` は専用Bearer認証必須、JSON2KiB以内。公開/api/eventは互換フィールドにinventory、configVersion=3、adminConfiguredを追加する。管理APIからの更新はrevisionとeventIdを比較し、他の編集やJST日付変更との競合を409で返す。
+
+DropSettingsは設定更新とdrawを直列化する。更新は永続pending journal→EventPool内のSQLite transaction→既定値とrevisionの原子的保存の順。途中で切れても同じoperationIdの再適用により復旧し、引いた結果や在庫を二重に変更しない。更新結果不明の場合は再保存せず最新状態を取得する。
+
+既存EVENT_POOLSは維持し、新しいDROP_SETTINGS bindingとv2-drop-settings migrationを追加する。どちらもSQLite Durable Objects。初回導入で既存の抽選本数は変更しない。draw APIを本番Smoke testとして実行しない。
 
 ## アーキテクチャ
 
@@ -88,6 +83,7 @@ node --check script.js
 node test/presentation.test.cjs
 node --check worker/src/index.js
 node worker/test/config.test.mjs
+node worker/test/settings.test.mjs
 ```
 
 ## ランダム動画演出

@@ -29,6 +29,9 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Verify inventory and immediate settings
+        run: npm test
+
       - name: Deploy Worker
         run: npm run deploy
         env:
@@ -43,7 +46,7 @@ jobs:
             -H 'Content-Type: application/json' \
             --data '{}')
           echo "$response"
-          node -e 'const x=JSON.parse(process.argv[1]); if (x.eventId !== 2026100402 || x.totalDraws !== 17) process.exit(1)' "$response"
+          node --input-type=module -e 'import {currentJstEventId} from "./src/index.js"; const x=JSON.parse(process.argv[1]); if (Math.floor(x.eventId/100) !== currentJstEventId() || !Number.isSafeInteger(x.totalDraws) || x.totalDraws<1 || x.configVersion!==3) process.exit(1)' "$response"
 
       - name: Smoke test session API
         run: |
