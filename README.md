@@ -100,3 +100,13 @@ node worker/test/settings.test.mjs
 python3 test/save-image.test.py
 python3 test/ios-save-image.test.py
 ```
+
+## 結果画面の案内設定
+
+`app-config.js` の `window.UNITY_DROP_OPTIONS` に `eventsUrl`（対象イベント）、`bookingUrl`（申込先）、`redemptionInstruction`（利用方法・提示タイミング）を設定できます。URLは確認済みのHTTPSのみ使用し、未設定のボタンは表示しません。利用方法は結果・再訪画面と保存画像に共通で表示されます。運営の実際の利用手順を確認してから設定してください。
+
+結果画面の改修では、iPhoneでタップから動画を再生するため中間画面を残し、抽選確定と動画再生の違いを明記しています。保存失敗時は再試行とスクリーンショットを案内します。通常ブラウザのダウンロード完了や写真アプリへの保存完了は検出できないため、完了したと断定する表示はしません。
+
+```bash
+python3 test/result-ux.test.py
+```

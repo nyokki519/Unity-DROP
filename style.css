@@ -46,3 +46,30 @@ body.in-cinematic{overflow:hidden;}
  .landing .limit{margin:15px 0 4px;font-size:10px}
 }
 @media(max-width:720px) and (min-height:760px){.landing .hero{min-height:calc(100svh - 80px)}.landing .hero-copy{padding-top:350px;padding-bottom:20px}}
+
+/* Prize-first result hierarchy and accessible supporting copy. */
+.result-screen .result-card{padding:34px 24px 28px}
+.prize-subtitle{position:relative;color:#604c3e;font-size:16px;font-weight:600;line-height:1.6;margin:8px 0 10px}
+.result-card h2{font-size:28px;line-height:1.5;margin:12px 0 22px}
+.result-card h2.discount-value{font-family:var(--sans);font-size:clamp(40px,12vw,60px);font-weight:600;line-height:1.25;letter-spacing:-.035em;white-space:nowrap}
+.result-screen .result-message{font-size:16px;line-height:1.9;color:#604c3e}
+.result-screen .expiration{position:relative;font-size:15px;line-height:1.8;color:#604c3e;font-weight:600}
+.result-screen .result-rarity{font-size:11px;line-height:1.6;color:#655446;margin:22px 0 0}
+.result-screen .result-rule{margin-top:14px;margin-bottom:16px}
+.result-screen .result-shimmer{display:none}
+.result-screen .thanks{font-size:15px;color:#604c3e}
+.result-screen .thanks span{color:#655446}
+.result-screen .share-button{font-size:15px;min-height:48px;color:#38271d;border-color:#8d765d}
+.result-screen .share-button:focus-visible,.event-link:focus-visible{outline:3px solid #604c3e;outline-offset:4px}
+.result-screen .save-help,.save-guide,.save-status{font-size:14px;line-height:1.8;color:#604c3e;font-weight:400}
+.save-status:empty{display:none}
+.result-actions{display:grid;gap:12px;margin:24px 0}
+.result-actions:empty{display:none}
+.event-link{display:block;padding:14px 16px;border:1px solid #8d765d;color:#38271d;text-decoration:none;font-size:15px;line-height:1.5}
+.event-link.primary{background:#38271d;color:#fffdf9}
+.event-link[hidden]{display:none}
+#screen-ready p{max-width:480px;line-height:1.9;font-size:15px;color:#604c3e}
+#screen-ready .share-button{min-height:48px;font-size:15px}
+
+.usage-guide{position:relative;margin:18px 0 0;padding:14px;background:#f6f0e5;color:#38271d;font-size:15px;line-height:1.9;text-align:left}
+.usage-guide[hidden]{display:none}

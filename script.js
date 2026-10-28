@@ -1,6 +1,6 @@
 /* UNITY DROP — presentation controller. The server is the sole draw authority. */
 const DROP_ITEMS = Object.freeze({
-  common: Object.freeze({ rarity: "common", title: "リピーター会イベント 200円OFF", message: "次回のUnityイベントで使える特典です。スタッフにお伝えください。" }),
+  common: Object.freeze({ rarity: "common", title: "200円OFF", subtitle: "リピーター会イベント", message: "次回のUnityイベントで使える特典です。スタッフにお伝えください。" }),
   rare: Object.freeze({ rarity: "rare", title: "RARE DROP", message: "少し特別な特典です。内容はスタッフにお声がけください。" }),
   secret: Object.freeze({ rarity: "secret", title: "SECRET RARE DROP", message: "おめでとうございます。特別なDROPです。内容はスタッフにお声がけください。" })
 });
@@ -177,13 +177,22 @@ const DROP_ITEMS = Object.freeze({
   }
 
   function render(prefix, item) {
+    // Upgrade earlier cached common-prize cards without changing their draw identity.
+    if (item.rarity === "common" && /200円\s*OFF/.test(item.title || "")) {
+      item = { ...item, title: "200円OFF", subtitle: "リピーター会イベント" };
+    }
+    item = { ...item, usage: String((window.UNITY_DROP_OPTIONS || {}).redemptionInstruction || "") };
     displayedItem = item;
+    $(`${prefix}-usage`).textContent = item.usage;
+    $(`${prefix}-usage`).hidden = !item.usage;
+    $(`${prefix}-subtitle`).textContent = String(item.subtitle || "");
     $(`${prefix}-title`).textContent = String(item.title || "");
     $(`${prefix}-message`).textContent = String(item.message || "");
     const rarity = $(`${prefix}-rarity-label`);
     rarity.textContent = item.rarity === "common" ? "STANDARD DROP" : tierLabel(item.rarity);
     rarity.dataset.rarity = item.rarity || "common";
     $(`${prefix}-expiration`).textContent = item.expiresAt ? `有効期限  ${item.expiresAt}` : "";
+    $(`${prefix}-title`).classList.toggle("discount-value", item.rarity === "common" && item.title === "200円OFF");
   }
 
   async function openDrop() {
@@ -228,75 +237,111 @@ const DROP_ITEMS = Object.freeze({
       (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   }
 
-  async function saveResultImage() {
+  function saveFeedback(message) {
+    document.querySelectorAll(".save-status").forEach(node => { node.textContent = message; });
+  }
+
+  async function saveResultImage(event) {
     if (!displayedItem) return;
-    const item = displayedItem;
-    const canvas = document.createElement("canvas");
-    canvas.width = 1080;
-    canvas.height = 1350;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.fillStyle = "#f6f0e5";
-    ctx.fillRect(0, 0, 1080, 1350);
-    ctx.fillStyle = "#fffdf9";
-    ctx.fillRect(60, 60, 960, 1230);
-    ctx.strokeStyle = "#c6a576";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(80, 80, 920, 1190);
-    ctx.textAlign = "center";
-    const text = (value, y, size, color = "#38271d", serif = false) => {
-      ctx.fillStyle = color;
-      ctx.font = `${size}px ${serif ? '"Shippori Mincho", serif' : '"DM Sans", sans-serif'}`;
-      ctx.fillText(value, 540, y);
-    };
-    const wrapped = (value, y, size, lineHeight, color) => {
-      ctx.font = `${size}px "Shippori Mincho", serif`;
-      let line = "";
-      for (const character of String(value || "").match(/[A-Za-z0-9]+|[^A-Za-z0-9]/gu) || []) {
-        if (character === "\n" || (line && ctx.measureText(line + character).width > 760)) {
-          text(line, y, size, color, true);
-          y += lineHeight;
-          line = character === "\n" ? "" : character;
-        } else line += character;
-      }
-      if (line) text(line, y, size, color, true);
-      return y + lineHeight;
-    };
-    const logo = document.querySelector(".nav-logo");
-    if (logo?.complete && logo.naturalWidth) ctx.drawImage(logo, 480, 140, 120, 120);
-    text("UNITY DROP", 330, 38);
-    text("TODAY’S CONNECTION", 380, 18, "#8d765d");
-    text(item.rarity === "common" ? "STANDARD DROP" : tierLabel(item.rarity), 490, 24, "#a47742");
-    let y = wrapped(item.title, 600, 46, 70, "#38271d");
-    y = wrapped(item.message, y + 65, 30, 52, "#79695c");
-    if (item.expiresAt) text(`有効期限  ${item.expiresAt}`, Math.max(1010, y + 35), 28, "#79695c", true);
-    text("今日のつながりに、ありがとう。", 1160, 28, "#79695c", true);
-    const filename = `UNITY-DROP-${item.eventId || "result"}.png`;
-    const imageUrl = canvas.toDataURL("image/png");
-    // Build the File synchronously to retain the tap's user activation on Safari.
-    if (isAppleMobile() && typeof navigator.canShare === "function" && typeof navigator.share === "function") {
-      try {
-        const binary = atob(imageUrl.split(",")[1]);
-        const bytes = Uint8Array.from(binary, character => character.charCodeAt(0));
-        const file = new File([bytes], filename, { type: "image/png" });
-        if (navigator.canShare({ files: [file] })) {
-          await navigator.share({ files: [file], title: "UNITY DROP" });
-          return;
+    const button = event?.currentTarget;
+    if (button) button.disabled = true;
+    try {
+      saveFeedback("");
+      const item = displayedItem;
+      const canvas = document.createElement("canvas");
+      canvas.width = 1080;
+      canvas.height = 1350;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Image canvas unavailable");
+      ctx.fillStyle = "#f6f0e5";
+      ctx.fillRect(0, 0, 1080, 1350);
+      ctx.fillStyle = "#fffdf9";
+      ctx.fillRect(60, 60, 960, 1230);
+      ctx.strokeStyle = "#c6a576";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(80, 80, 920, 1190);
+      ctx.textAlign = "center";
+      const text = (value, y, size, color = "#38271d", serif = false) => {
+        ctx.fillStyle = color;
+        ctx.font = `${size}px ${serif ? '"Shippori Mincho", serif' : '"DM Sans", sans-serif'}`;
+        ctx.fillText(value, 540, y);
+      };
+      const wrapped = (value, y, size, lineHeight, color) => {
+        ctx.font = `${size}px "Shippori Mincho", serif`;
+        let line = "";
+        for (const character of String(value || "").match(/[A-Za-z0-9]+|[^A-Za-z0-9]/gu) || []) {
+          if (character === "\n" || (line && ctx.measureText(line + character).width > 760)) {
+            text(line, y, size, color, true);
+            y += lineHeight;
+            line = character === "\n" ? "" : character;
+          } else line += character;
         }
-      } catch (error) {
-        if (error.name === "AbortError") return;
-        console.warn("UNITY DROP image sharing unavailable:", error);
+        if (line) text(line, y, size, color, true);
+        return y + lineHeight;
+      };
+      const logo = document.querySelector(".nav-logo");
+      if (logo?.complete && logo.naturalWidth) ctx.drawImage(logo, 480, 140, 120, 120);
+      text("UNITY DROP", 330, 38);
+      text("TODAY’S CONNECTION", 380, 18, "#8d765d");
+      if (item.subtitle) text(item.subtitle, 470, 32, "#604c3e", true);
+      let y = wrapped(item.title, 590, item.title === "200円OFF" ? 110 : 46, 85, "#38271d");
+      y = wrapped(item.message, y + 65, 30, 52, "#79695c");
+      if (item.usage) y = wrapped(item.usage, y + 20, 30, 48, "#604c3e");
+      const rankY = Math.max(960, y + 24);
+      text(item.rarity === "common" ? "STANDARD DROP" : tierLabel(item.rarity), rankY, 20, "#604c3e");
+      if (item.expiresAt) text(`有効期限  ${item.expiresAt}`, Math.max(1060, rankY + 65), 34, "#604c3e", true);
+      text("今日のつながりに、ありがとう。", 1220, 28, "#79695c", true);
+      const filename = `UNITY-DROP-${item.eventId || "result"}.png`;
+      const imageUrl = canvas.toDataURL("image/png");
+      // Build the File synchronously to retain the tap's user activation on Safari.
+      if (isAppleMobile() && typeof navigator.canShare === "function" && typeof navigator.share === "function") {
+        try {
+          const binary = atob(imageUrl.split(",")[1]);
+          const bytes = Uint8Array.from(binary, character => character.charCodeAt(0));
+          const file = new File([bytes], filename, { type: "image/png" });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file], title: "UNITY DROP" });
+            saveFeedback("共有メニューを閉じました。写真への保存は、共有メニューの「画像を保存」で行えます。");
+            return;
+          }
+        } catch (error) {
+          if (error.name === "AbortError") {
+            saveFeedback("保存をキャンセルしました。保存する場合は、もう一度「画像を保存」を押してください。");
+            return;
+          }
+          console.warn("UNITY DROP image sharing unavailable:", error);
+        }
       }
+      const link = document.createElement("a");
+      link.download = filename;
+      link.href = imageUrl;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      saveFeedback("画像のダウンロードを開始しました。見つからない場合は端末のダウンロード先をご確認ください。");
+    } catch (error) {
+      console.warn("UNITY DROP image export error:", error);
+      saveFeedback("画像を保存できませんでした。もう一度「画像を保存」を押すか、この画面のスクリーンショットをご利用ください。");
+    } finally {
+      if (button) button.disabled = false;
     }
-    const link = document.createElement("a");
-    link.download = filename;
-    link.href = imageUrl;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+  }
+
+  function configureResultLinks() {
+    const options = window.UNITY_DROP_OPTIONS || {};
+    document.querySelectorAll("[data-event-link]").forEach(link => {
+      const configured = link.dataset.eventLink === "booking" ? options.bookingUrl : options.eventsUrl;
+      try {
+        const url = new URL(configured);
+        if (url.protocol !== "https:") return;
+        link.href = url.href;
+        link.hidden = false;
+      } catch (_) { /* No unverified destination is shown. */ }
+    });
   }
 
   async function init() {
+    configureResultLinks();
     $("btn-open").addEventListener("click", event => {
       event.currentTarget.disabled = true;
       openDrop();
