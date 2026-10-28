@@ -8,16 +8,16 @@ with sync_playwright() as p:
   page=b.new_page(viewport={'width':width,'height':900})
   page.route('**/api/event',lambda r:r.fulfill(content_type='application/json',body=json.dumps({'eventId':item['eventId']})))
   page.add_init_script('localStorage.setItem("unityDropLastResult",'+json.dumps(json.dumps(item))+')')
-  page.add_init_script('window.UNITY_DROP_OPTIONS={eventsUrl:"https://example.com/events",bookingUrl:"https://example.com/book",redemptionInstruction:"テスト：対象イベントの受付で保存画像を提示してください。"}')
   page.goto(os.environ.get('UNITY_DROP_TEST_URL','http://localhost:4173/'));page.wait_for_selector('#screen-already.is-active')
   assert page.locator('#already-title').inner_text()=='200円OFF'
-  assert '受付' in page.locator('#already-usage').inner_text()
+  assert page.locator('#already-usage').inner_text()=='当日受付で保存画像を提出してください。'
+  assert 'スタッフにお伝え' not in page.locator('#already-message').inner_text()
   assert page.locator('#already-usage').is_visible()
   assert page.locator('#already-subtitle').inner_text()=='リピーター会イベント'
   assert page.locator('#already-title').evaluate('(e)=>e.getBoundingClientRect().height<parseFloat(getComputedStyle(e).lineHeight)*1.2')
   assert page.locator('#already-expiration').evaluate('(e)=>parseFloat(getComputedStyle(e).fontSize)>=14')
   assert page.locator('#already-message').evaluate('(e)=>parseFloat(getComputedStyle(e).fontSize)>=15')
-  assert page.locator('#screen-already [data-event-link="events"]').get_attribute('href')=='https://example.com/events'
+  assert page.locator('#screen-already [data-event-link="events"]').get_attribute('href')=='https://nyokki519.github.io/Unity_S/'
   assert page.locator('#screen-already [data-event-link="booking"]').is_visible()
   ratios=page.evaluate("""()=>{
    const lum=rgb=>{const c=rgb.map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4});return .2126*c[0]+.7152*c[1]+.0722*c[2]};

@@ -1,8 +1,8 @@
 /* UNITY DROP — presentation controller. The server is the sole draw authority. */
 const DROP_ITEMS = Object.freeze({
-  common: Object.freeze({ rarity: "common", title: "200円OFF", subtitle: "リピーター会イベント", message: "次回のUnityイベントで使える特典です。スタッフにお伝えください。" }),
-  rare: Object.freeze({ rarity: "rare", title: "RARE DROP", message: "少し特別な特典です。内容はスタッフにお声がけください。" }),
-  secret: Object.freeze({ rarity: "secret", title: "SECRET RARE DROP", message: "おめでとうございます。特別なDROPです。内容はスタッフにお声がけください。" })
+  common: Object.freeze({ rarity: "common", title: "200円OFF", subtitle: "リピーター会イベント", message: "リピーター会イベントの参加費から200円割引になる特典です。" }),
+  rare: Object.freeze({ rarity: "rare", title: "RARE DROP", message: "少し特別な特典です。" }),
+  secret: Object.freeze({ rarity: "secret", title: "SECRET RARE DROP", message: "おめでとうございます。特別なDROPです。" })
 });
 
 (function () {
@@ -181,6 +181,7 @@ const DROP_ITEMS = Object.freeze({
     if (item.rarity === "common" && /200円\s*OFF/.test(item.title || "")) {
       item = { ...item, title: "200円OFF", subtitle: "リピーター会イベント" };
     }
+    if (DROP_ITEMS[item.rarity]) item = { ...item, message: DROP_ITEMS[item.rarity].message };
     item = { ...item, usage: String((window.UNITY_DROP_OPTIONS || {}).redemptionInstruction || "") };
     displayedItem = item;
     $(`${prefix}-usage`).textContent = item.usage;
